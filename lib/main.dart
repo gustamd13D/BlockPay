@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'telas/tela_inicial.dart';
 
 void main() {
-  runApp(const BlockPayApp());
+  runApp(const MyApp());
 }
 
-class BlockPayApp extends StatelessWidget {
-  const BlockPayApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {

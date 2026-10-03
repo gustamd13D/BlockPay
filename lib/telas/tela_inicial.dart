@@ -13,15 +13,27 @@ class TelaInicial extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'BlockPay EDU',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xFF00E5FF),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'BlockPay EDU',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
+
               const SizedBox(height: 80),
+
               const Text(
                 'Aprenda a investir em cripto sem riscos',
                 style: TextStyle(
@@ -30,7 +42,9 @@ class TelaInicial extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
               const SizedBox(height: 16),
+
               const Text(
                 'Simule carteiras, faça conversões instantâneas '
                 'e envie transferências na blockchain usando '
@@ -40,7 +54,9 @@ class TelaInicial extends StatelessWidget {
                   fontSize: 15,
                 ),
               ),
+
               const Spacer(),
+
               const Text(
                 'Carteira Simulada',
                 style: TextStyle(
@@ -49,15 +65,9 @@ class TelaInicial extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Comece com R\$ 10.000,00 fictícios para praticar.',
-                style: TextStyle(
-                  color: Color(0xFF90A4AE),
-                  fontSize: 13,
-                ),
-              ),
+              
               const SizedBox(height: 20),
+
               const Text(
                 'Conversão & Pix',
                 style: TextStyle(
@@ -66,7 +76,9 @@ class TelaInicial extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
               const SizedBox(height: 8),
+
               const Text(
                 'Simule pix e compre moedas com cotações reais.',
                 style: TextStyle(
@@ -74,7 +86,9 @@ class TelaInicial extends StatelessWidget {
                   fontSize: 13,
                 ),
               ),
+
               const SizedBox(height: 30),
+
               const Text(
                 'Ambiente 100% educativo. Sem dinheiro real envolvido '
                 'e sem qualquer tipo de risco financeiro.',
@@ -83,7 +97,9 @@ class TelaInicial extends StatelessWidget {
                   fontSize: 12,
                 ),
               ),
+
               const SizedBox(height: 30),
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -98,3 +114,4 @@ class TelaInicial extends StatelessWidget {
     );
   }
 }
+
