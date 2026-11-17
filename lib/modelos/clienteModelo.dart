@@ -5,6 +5,7 @@ class ClienteModelo {
   final String nome;
   final String cpf;
   final String email;
+  final String telefone;
   final String pinHash;
   final double saldoBrl;
   final DateTime? criadoEm;
@@ -14,6 +15,7 @@ class ClienteModelo {
     required this.nome,
     required this.cpf,
     required this.email,
+    this.telefone = '',
     required this.pinHash,
     required this.saldoBrl,
     this.criadoEm,
@@ -26,6 +28,7 @@ class ClienteModelo {
       'nome': nome,
       'cpf': cpf,
       'email': email,
+      'telefone': telefone,
       'pinHash': pinHash,
       'saldoBrl': saldoBrl,
       'ativo': ativo,
@@ -40,6 +43,7 @@ class ClienteModelo {
       nome: mapa['nome'] as String? ?? '',
       cpf: mapa['cpf'] as String? ?? '',
       email: mapa['email'] as String? ?? '',
+      telefone: mapa['telefone'] as String? ?? '',
       pinHash: mapa['pinHash'] as String? ?? '',
       saldoBrl: (mapa['saldoBrl'] as num?)?.toDouble() ?? 0.0,
       criadoEm: timestamp is Timestamp ? timestamp.toDate() : null,

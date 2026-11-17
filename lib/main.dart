@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
+import 'modelos/clienteModelo.dart';
 import 'servicos/servicoFirestore.dart';
 import 'telas/boasvindas.dart';
 import 'telas/login.dart';
@@ -8,6 +10,8 @@ import 'telas/cadastroCliente.dart';
 import 'telas/recuperarAcesso.dart';
 import 'telas/validarCodigo.dart';
 import 'telas/alterarSenha.dart';
+import 'telas/dashboard.dart';
+import 'telas/editarConta.dart';
 
 Future<void> main() async {
   // Garante que os canais nativos estejam prontos antes de iniciar o Firebase
@@ -58,6 +62,26 @@ class BlockPayApp extends StatelessWidget {
     }
   }
 
+  /// Extrai as iniciais do primeiro e ultimo nome para o avatar do topo
+  String _extrairIniciais(String nomeCompleto) {
+    final partes = nomeCompleto.trim().split(RegExp(r'\s+'));
+    if (partes.isEmpty || partes.first.isEmpty) return 'BP';
+    if (partes.length == 1) {
+      return partes.first.substring(0, 1).toUpperCase();
+    }
+    return '${partes.first[0]}${partes.last[0]}'.toUpperCase();
+  }
+
+  void _avisarTelaEmBreve(BuildContext context, String nomeTela) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Tela de $nomeTela em desenvolvimento.'),
+        backgroundColor: const Color(0xFF151A26),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   /// Constroi a tela de Login com os callbacks conectados ao Firestore
   Widget _construirTelaLogin(BuildContext context) {
     return Login(
@@ -71,16 +95,12 @@ class BlockPayApp extends StatelessWidget {
         );
 
         if (cliente != null && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Bem-vindo, ${cliente.nome}! Saldo: R\$ ${cliente.saldoBrl.toStringAsFixed(2)}',
-              ),
-              backgroundColor: const Color(0xFF151A26),
-            ),
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/painel',
+            (_) => false,
+            arguments: cliente,
           );
-          // Quando criar a tela principal, navegue para o painel:
-          // Navigator.pushNamedAndRemoveUntil(context, '/painel', (_) => false, arguments: cliente);
         }
       },
       esquecerSenha: () {
@@ -117,6 +137,97 @@ class BlockPayApp extends StatelessWidget {
               },
             ),
         '/login': (context) => _construirTelaLogin(context),
+        '/painel': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is! ClienteModelo) {
+            return _construirTelaLogin(context);
+          }
+
+          return StreamBuilder<ClienteModelo>(
+            stream: FirebaseFirestore.instance
+                .collection('clientes')
+                .doc(args.cpf)
+                .snapshots()
+                .map((doc) {
+              final dados = doc.data();
+              return dados != null ? ClienteModelo.deMapa(dados) : args;
+            }),
+            builder: (context, snapshot) {
+              final clienteAtual = snapshot.data ?? args;
+
+              return Dashboard(
+                iniciaisUsuario: _extrairIniciais(clienteAtual.nome),
+                saldoBrl: clienteAtual.saldoBrl,
+                aoClicarPerfil: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/editar-conta',
+                    arguments: clienteAtual,
+                  );
+                },
+                aoClicarVerTodas: () =>
+                    _avisarTelaEmBreve(context, 'Histórico'),
+                aoClicarTransferir: () =>
+                    _avisarTelaEmBreve(context, 'Transferência'),
+                aoClicarBlockchain: () =>
+                    _avisarTelaEmBreve(context, 'Blockchain'),
+                aoClicarInicio: () {},
+                aoClicarMercado: () => _avisarTelaEmBreve(context, 'Mercado'),
+                aoClicarPix: () => _avisarTelaEmBreve(context, 'Pix'),
+                aoClicarHistorico: () =>
+                    _avisarTelaEmBreve(context, 'Histórico'),
+              );
+            },
+          );
+        },
+        '/editar-conta': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is! ClienteModelo) {
+            return _construirTelaLogin(context);
+          }
+
+          return EditarConta(
+            nome: args.nome,
+            cpf: args.cpf,
+            email: args.email,
+            telefone: args.telefone,
+            aoClicarAlterarSenha: () {
+              Navigator.pushNamed(
+                context,
+                '/alterar-senha',
+                arguments: {'cpf': args.cpf, 'exigirSenhaAtual': true},
+              );
+            },
+            salvarAlteracoes: (novoNome, novoEmail, novoTelefone) async {
+              var salvo = false;
+              await _executarComCarregamento(context, () async {
+                await FirebaseFirestore.instance
+                    .collection('clientes')
+                    .doc(args.cpf)
+                    .update({
+                  'nome': novoNome,
+                  'email': novoEmail,
+                  'telefone': novoTelefone,
+                });
+                salvo = true;
+              });
+
+              if (salvo && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Dados da conta atualizados com sucesso!'),
+                    backgroundColor: Color(0xFF00C853),
+                  ),
+                );
+                Navigator.pop(context);
+              }
+            },
+            aoClicarInicio: () => Navigator.pop(context),
+            aoClicarMercado: () => _avisarTelaEmBreve(context, 'Mercado'),
+            aoClicarPix: () => _avisarTelaEmBreve(context, 'Pix'),
+            aoClicarHistorico: () => _avisarTelaEmBreve(context, 'Histórico'),
+          );
+        },
         '/cadastro': (context) => CadastroCliente(
               cadastrar: (nome, cpf, email, pin) async {
                 final clienteCriado = await _executarComCarregamento(
@@ -249,13 +360,20 @@ class BlockPayApp extends StatelessWidget {
 
               if (salva && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Senha alterada com sucesso! Faça login.'),
-                    backgroundColor: Color(0xFF00C853),
+                  SnackBar(
+                    content: Text(
+                      exigirSenhaAtual
+                          ? 'Senha alterada com sucesso!'
+                          : 'Senha alterada com sucesso! Faça login.',
+                    ),
+                    backgroundColor: const Color(0xFF00C853),
                   ),
                 );
-                // Limpa as telas intermediarias e retorna direto ao login
-                Navigator.popUntil(context, ModalRoute.withName('/login'));
+                if (exigirSenhaAtual) {
+                  Navigator.pop(context);
+                } else {
+                  Navigator.popUntil(context, ModalRoute.withName('/login'));
+                }
               }
             },
           );
