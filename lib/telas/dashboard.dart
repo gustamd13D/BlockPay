@@ -1,5 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 /// Paleta de cores centralizada do sistema de design BlockPay
 abstract class _CoresApp {
@@ -11,28 +14,27 @@ abstract class _CoresApp {
   static const Color cianoSuave = Color(0x1500E5FF);
   static const Color verdePositivo = Color(0xFF00E676);
   static const Color verdeSuave = Color(0x1500E676);
+  static const Color vermelhoNegativo = Color(0xFFFF5252);
   static const Color amareloBitcoin = Color(0xFFFFD600);
   static const Color amareloSuave = Color(0x15FFD600);
   static const Color textoPrimario = Colors.white;
   static const Color textoSecundario = Color(0xFF90A4AE);
 }
 
-class Dashboard extends StatelessWidget {
-  /// Dados exibidos na carteira (com valores padrao da simulacao inicial)
+class Dashboard extends StatefulWidget {
+  /// Dados reais vindos do Firestore
   final String iniciaisUsuario;
   final double saldoBrl;
   final double quantidadeBtc;
-  final double valorBtcBrl;
   final double quantidadeEth;
-  final double valorEthBrl;
-  final double variacaoHojeBrl;
-  final double variacaoHojePercentual;
   final String descricaoUltimaAtividade;
-  final double valorUltimaAtividade;
+  final String valorUltimaAtividadeFormatado;
+  final bool atividadePositiva;
   final List<double> pontosEvolucao7Dias;
 
   /// Callbacks de navegacao dos elementos clicaveis
   final VoidCallback? aoClicarPerfil;
+  final VoidCallback? aoClicarSair;
   final VoidCallback? aoClicarVerTodas;
   final VoidCallback? aoClicarTransferir;
   final VoidCallback? aoClicarBlockchain;
@@ -44,17 +46,15 @@ class Dashboard extends StatelessWidget {
   const Dashboard({
     super.key,
     this.iniciaisUsuario = 'AL',
-    this.saldoBrl = 1000.00,
-    this.quantidadeBtc = 0.034,
-    this.valorBtcBrl = 10420.00,
-    this.quantidadeEth = 0.25,
-    this.valorEthBrl = 4000.00,
-    this.variacaoHojeBrl = 420.00,
-    this.variacaoHojePercentual = 2.8,
-    this.descricaoUltimaAtividade = 'Depósito via Pix',
-    this.valorUltimaAtividade = 1000.00,
+    required this.saldoBrl,
+    required this.quantidadeBtc,
+    required this.quantidadeEth,
+    this.descricaoUltimaAtividade = 'Bônus de cadastro',
+    this.valorUltimaAtividadeFormatado = '+R\$ 10.000,00',
+    this.atividadePositiva = true,
     this.pontosEvolucao7Dias = const [0.32, 0.0, 0.49, 0.81, 0.65, 0.89, 1.0],
     this.aoClicarPerfil,
+    this.aoClicarSair,
     this.aoClicarVerTodas,
     this.aoClicarTransferir,
     this.aoClicarBlockchain,
@@ -64,7 +64,127 @@ class Dashboard extends StatelessWidget {
     this.aoClicarHistorico,
   });
 
-  double get _patrimonioTotal => saldoBrl + valorBtcBrl + valorEthBrl;
+  @override
+  State<Dashboard> createState() => _DashboardState();
+}
+
+class _DashboardState extends State<Dashboard> {
+  // Cotacoes iniciais de fallback ate a primeira resposta da API
+  double _cotacaoBtcBrl = 306470.59;
+  double _cotacaoEthBrl = 16000.00;
+  double _variacaoBtc24h = 2.8;
+  double _variacaoEth24h = 1.9;
+  bool _carregandoCotacao = true;
+  Timer? _temporizadorCotacao;
+
+  @override
+  void initState() {
+    super.initState();
+    _buscarCotacoesAtuais();
+    _temporizadorCotacao = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => _buscarCotacoesAtuais(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _temporizadorCotacao?.cancel();
+    super.dispose();
+  }
+
+  /// Busca cotacao atual de BTC e ETH em BRL
+  Future<void> _buscarCotacoesAtuais() async {
+    if (mounted) {
+      setState(() => _carregandoCotacao = true);
+    }
+
+    try {
+      // 1. Consulta primaria: CoinGecko API
+      final uriCoinGecko = Uri.parse(
+        'https://api.coingecko.com/api/v3/simple/price'
+        '?ids=bitcoin,ethereum&vs_currencies=brl&include_24hr_change=true',
+      );
+      final resposta =
+          await http.get(uriCoinGecko).timeout(const Duration(seconds: 8));
+
+      if (resposta.statusCode == 200) {
+        final json = jsonDecode(resposta.body) as Map<String, dynamic>;
+        final btc = json['bitcoin'] as Map<String, dynamic>?;
+        final eth = json['ethereum'] as Map<String, dynamic>?;
+
+        if (btc != null && eth != null && mounted) {
+          setState(() {
+            _cotacaoBtcBrl = (btc['brl'] as num?)?.toDouble() ?? _cotacaoBtcBrl;
+            _cotacaoEthBrl = (eth['brl'] as num?)?.toDouble() ?? _cotacaoEthBrl;
+            _variacaoBtc24h =
+                (btc['brl_24h_change'] as num?)?.toDouble() ?? _variacaoBtc24h;
+            _variacaoEth24h =
+                (eth['brl_24h_change'] as num?)?.toDouble() ?? _variacaoEth24h;
+            _carregandoCotacao = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {
+      // Tenta API secundaria abaixo
+    }
+
+    try {
+      // 2. Fallback: AwesomeAPI Brasil (BTC-BRL e ETH-BRL)
+      final uriAwesome = Uri.parse(
+        'https://economia.awesomeapi.com.br/json/last/BTC-BRL,ETH-BRL',
+      );
+      final resposta =
+          await http.get(uriAwesome).timeout(const Duration(seconds: 8));
+
+      if (resposta.statusCode == 200) {
+        final json = jsonDecode(resposta.body) as Map<String, dynamic>;
+        final btc = json['BTCBRL'] as Map<String, dynamic>?;
+        final eth = json['ETHBRL'] as Map<String, dynamic>?;
+
+        if (btc != null && eth != null && mounted) {
+          setState(() {
+            _cotacaoBtcBrl =
+                double.tryParse(btc['bid']?.toString() ?? '') ?? _cotacaoBtcBrl;
+            _cotacaoEthBrl =
+                double.tryParse(eth['bid']?.toString() ?? '') ?? _cotacaoEthBrl;
+            _variacaoBtc24h =
+                double.tryParse(btc['pctChange']?.toString() ?? '') ??
+                    _variacaoBtc24h;
+            _variacaoEth24h =
+                double.tryParse(eth['pctChange']?.toString() ?? '') ??
+                    _variacaoEth24h;
+            _carregandoCotacao = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {
+      // Mantem ultima cotacao valida caso esteja offline
+    }
+
+    if (mounted) {
+      setState(() => _carregandoCotacao = false);
+    }
+  }
+
+  /// Calculos dinamicos baseados na quantidade atual + cotacao em tempo real
+  double get _valorBtcBrl => widget.quantidadeBtc * _cotacaoBtcBrl;
+  double get _valorEthBrl => widget.quantidadeEth * _cotacaoEthBrl;
+  double get _patrimonioTotal => widget.saldoBrl + _valorBtcBrl + _valorEthBrl;
+
+  double get _variacaoHojeBrl {
+    final ganhoBtc = _valorBtcBrl * (_variacaoBtc24h / 100);
+    final ganhoEth = _valorEthBrl * (_variacaoEth24h / 100);
+    return ganhoBtc + ganhoEth;
+  }
+
+  double get _variacaoHojePercentual {
+    final patrimonioOntem = _patrimonioTotal - _variacaoHojeBrl;
+    if (patrimonioOntem <= 0) return 0.0;
+    return (_variacaoHojeBrl / patrimonioOntem) * 100;
+  }
 
   /// Formata valores monetarios no padrao brasileiro (ex: 15.420,00)
   static String _formatarMoeda(double valor) {
@@ -98,7 +218,49 @@ class Dashboard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _TituloSecao(texto: 'SEUS ATIVOS'),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const _TituloSecao(texto: 'SEUS ATIVOS'),
+            InkWell(
+              onTap: _carregandoCotacao ? null : _buscarCotacoesAtuais,
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_carregandoCotacao)
+                      const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.8,
+                          color: _CoresApp.cianoPrimario,
+                        ),
+                      )
+                    else
+                      const Icon(
+                        Icons.refresh_rounded,
+                        color: _CoresApp.cianoPrimario,
+                        size: 14,
+                      ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _carregandoCotacao ? 'Atualizando...' : 'Cotação ao vivo',
+                      style: const TextStyle(
+                        color: _CoresApp.cianoPrimario,
+                        fontSize: 11,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 10),
         _CardAtivo(
           corFundoIcone: _CoresApp.verdeSuave,
@@ -113,7 +275,7 @@ class Dashboard extends StatelessWidget {
           ),
           titulo: 'Saldo em BRL',
           subtitulo: 'Disponível para uso',
-          valorBrlFormatado: _formatarMoeda(saldoBrl),
+          valorBrlFormatado: _formatarMoeda(widget.saldoBrl),
         ),
         const SizedBox(height: 10),
         _CardAtivo(
@@ -124,8 +286,9 @@ class Dashboard extends StatelessWidget {
             size: 22,
           ),
           titulo: 'Bitcoin (BTC)',
-          subtitulo: '${_formatarDecimal(quantidadeBtc, 6)} BTC',
-          valorBrlFormatado: _formatarMoeda(valorBtcBrl),
+          subtitulo:
+              '${_formatarDecimal(widget.quantidadeBtc, 6)} BTC • ${_formatarMoeda(_cotacaoBtcBrl)}',
+          valorBrlFormatado: _formatarMoeda(_valorBtcBrl),
         ),
         const SizedBox(height: 10),
         _CardAtivo(
@@ -136,8 +299,9 @@ class Dashboard extends StatelessWidget {
             size: 22,
           ),
           titulo: 'Ethereum (ETH)',
-          subtitulo: '${_formatarDecimal(quantidadeEth, 4)} ETH',
-          valorBrlFormatado: _formatarMoeda(valorEthBrl),
+          subtitulo:
+              '${_formatarDecimal(widget.quantidadeEth, 4)} ETH • ${_formatarMoeda(_cotacaoEthBrl)}',
+          valorBrlFormatado: _formatarMoeda(_valorEthBrl),
         ),
       ],
     );
@@ -153,7 +317,7 @@ class Dashboard extends StatelessWidget {
           children: [
             const _TituloSecao(texto: 'ATIVIDADES RECENTES'),
             InkWell(
-              onTap: aoClicarVerTodas,
+              onTap: widget.aoClicarVerTodas,
               borderRadius: BorderRadius.circular(6),
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -172,8 +336,9 @@ class Dashboard extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         _CardAtividadeRecente(
-          descricao: descricaoUltimaAtividade,
-          valorFormatado: '+${_formatarMoeda(valorUltimaAtividade)}',
+          descricao: widget.descricaoUltimaAtividade,
+          valorFormatado: widget.valorUltimaAtividadeFormatado,
+          positiva: widget.atividadePositiva,
         ),
       ],
     );
@@ -191,7 +356,7 @@ class Dashboard extends StatelessWidget {
               child: _BotaoAcaoRapida(
                 icone: Icons.send_outlined,
                 rotulo: 'Transferir',
-                aoClicar: aoClicarTransferir,
+                aoClicar: widget.aoClicarTransferir,
               ),
             ),
             const SizedBox(width: 12),
@@ -199,7 +364,7 @@ class Dashboard extends StatelessWidget {
               child: _BotaoAcaoRapida(
                 icone: Icons.storage_rounded,
                 rotulo: 'Blockchain',
-                aoClicar: aoClicarBlockchain,
+                aoClicar: widget.aoClicarBlockchain,
               ),
             ),
           ],
@@ -231,10 +396,10 @@ class Dashboard extends StatelessWidget {
                 ? null
                 : _BarraNavegacaoInferior(
                     indiceAtivo: 0,
-                    aoClicarInicio: aoClicarInicio,
-                    aoClicarMercado: aoClicarMercado,
-                    aoClicarPix: aoClicarPix,
-                    aoClicarHistorico: aoClicarHistorico,
+                    aoClicarInicio: widget.aoClicarInicio,
+                    aoClicarMercado: widget.aoClicarMercado,
+                    aoClicarPix: widget.aoClicarPix,
+                    aoClicarHistorico: widget.aoClicarHistorico,
                   ),
           ),
         );
@@ -244,14 +409,20 @@ class Dashboard extends StatelessWidget {
 
   /// Layout compacto em 1 coluna para celulares
   Widget _construirLayoutMobile() {
+    final bool variacaoPositiva = _variacaoHojeBrl >= 0;
+    final String sinal = variacaoPositiva ? '+' : '';
+    final String textoVariacao =
+        '$sinal${_formatarMoeda(_variacaoHojeBrl)} ($sinal${_formatarDecimal(_variacaoHojePercentual, 2)}%) hoje';
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: Column(
           children: [
             _CabecalhoCarteira(
-              iniciais: iniciaisUsuario,
-              aoClicarPerfil: aoClicarPerfil,
+              iniciais: widget.iniciaisUsuario,
+              aoClicarPerfil: widget.aoClicarPerfil,
+              aoClicarSair: widget.aoClicarSair,
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -262,12 +433,12 @@ class Dashboard extends StatelessWidget {
                   children: [
                     _CardPatrimonioTotal(
                       valorTotalFormatado: _formatarMoeda(_patrimonioTotal),
-                      variacaoHojeFormatada:
-                          '+${_formatarMoeda(variacaoHojeBrl)} (${_formatarDecimal(variacaoHojePercentual, 1)}%) hoje',
+                      variacaoHojeFormatada: textoVariacao,
+                      positiva: variacaoPositiva,
                     ),
                     const SizedBox(height: 18),
                     _CardEvolucaoCarteira(
-                      pontos: pontosEvolucao7Dias,
+                      pontos: widget.pontosEvolucao7Dias,
                       alturaGrafico: 76,
                     ),
                     const SizedBox(height: 22),
@@ -288,16 +459,22 @@ class Dashboard extends StatelessWidget {
 
   /// Layout expandido em 2 colunas com navegacao superior para Web e Tablets
   Widget _construirLayoutDesktop() {
+    final bool variacaoPositiva = _variacaoHojeBrl >= 0;
+    final String sinal = variacaoPositiva ? '+' : '';
+    final String textoVariacao =
+        '$sinal${_formatarMoeda(_variacaoHojeBrl)} ($sinal${_formatarDecimal(_variacaoHojePercentual, 2)}%) hoje';
+
     return Column(
       children: [
         _CabecalhoDesktop(
-          iniciais: iniciaisUsuario,
+          iniciais: widget.iniciaisUsuario,
           indiceAtivo: 0,
-          aoClicarPerfil: aoClicarPerfil,
-          aoClicarInicio: aoClicarInicio,
-          aoClicarMercado: aoClicarMercado,
-          aoClicarPix: aoClicarPix,
-          aoClicarHistorico: aoClicarHistorico,
+          aoClicarPerfil: widget.aoClicarPerfil,
+          aoClicarSair: widget.aoClicarSair,
+          aoClicarInicio: widget.aoClicarInicio,
+          aoClicarMercado: widget.aoClicarMercado,
+          aoClicarPix: widget.aoClicarPix,
+          aoClicarHistorico: widget.aoClicarHistorico,
         ),
         Expanded(
           child: SingleChildScrollView(
@@ -318,12 +495,12 @@ class Dashboard extends StatelessWidget {
                           _CardPatrimonioTotal(
                             valorTotalFormatado:
                                 _formatarMoeda(_patrimonioTotal),
-                            variacaoHojeFormatada:
-                                '+${_formatarMoeda(variacaoHojeBrl)} (${_formatarDecimal(variacaoHojePercentual, 1)}%) hoje',
+                            variacaoHojeFormatada: textoVariacao,
+                            positiva: variacaoPositiva,
                           ),
                           const SizedBox(height: 20),
                           _CardEvolucaoCarteira(
-                            pontos: pontosEvolucao7Dias,
+                            pontos: widget.pontosEvolucao7Dias,
                             alturaGrafico: 115,
                           ),
                           const SizedBox(height: 24),
@@ -358,10 +535,12 @@ class Dashboard extends StatelessWidget {
 class _CabecalhoCarteira extends StatelessWidget {
   final String iniciais;
   final VoidCallback? aoClicarPerfil;
+  final VoidCallback? aoClicarSair;
 
   const _CabecalhoCarteira({
     required this.iniciais,
     this.aoClicarPerfil,
+    this.aoClicarSair,
   });
 
   @override
@@ -385,6 +564,7 @@ class _CabecalhoCarteira extends StatelessWidget {
           _AvatarUsuario(
             iniciais: iniciais,
             aoClicarPerfil: aoClicarPerfil,
+            aoClicarSair: aoClicarSair,
           ),
         ],
       ),
@@ -396,6 +576,7 @@ class _CabecalhoDesktop extends StatelessWidget {
   final String iniciais;
   final int indiceAtivo;
   final VoidCallback? aoClicarPerfil;
+  final VoidCallback? aoClicarSair;
   final VoidCallback? aoClicarInicio;
   final VoidCallback? aoClicarMercado;
   final VoidCallback? aoClicarPix;
@@ -405,6 +586,7 @@ class _CabecalhoDesktop extends StatelessWidget {
     required this.iniciais,
     required this.indiceAtivo,
     this.aoClicarPerfil,
+    this.aoClicarSair,
     this.aoClicarInicio,
     this.aoClicarMercado,
     this.aoClicarPix,
@@ -505,6 +687,7 @@ class _CabecalhoDesktop extends StatelessWidget {
               _AvatarUsuario(
                 iniciais: iniciais,
                 aoClicarPerfil: aoClicarPerfil,
+                aoClicarSair: aoClicarSair,
               ),
             ],
           ),
@@ -564,17 +747,84 @@ class _ItemMenuSuperior extends StatelessWidget {
 class _AvatarUsuario extends StatelessWidget {
   final String iniciais;
   final VoidCallback? aoClicarPerfil;
+  final VoidCallback? aoClicarSair;
 
   const _AvatarUsuario({
     required this.iniciais,
     this.aoClicarPerfil,
+    this.aoClicarSair,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: aoClicarPerfil,
-      borderRadius: BorderRadius.circular(18),
+    return PopupMenuButton<String>(
+      tooltip: 'Opções da conta',
+      offset: const Offset(0, 44),
+      color: _CoresApp.superficie,
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(
+          color: _CoresApp.borda,
+          width: 1,
+        ),
+      ),
+      onSelected: (opcao) {
+        if (opcao == 'conta') {
+          aoClicarPerfil?.call();
+        } else if (opcao == 'sair') {
+          aoClicarSair?.call();
+        }
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem<String>(
+          value: 'conta',
+          height: 44,
+          child: Row(
+            children: [
+              Icon(
+                Icons.person_outline_rounded,
+                color: _CoresApp.cianoPrimario,
+                size: 18,
+              ),
+              SizedBox(width: 10),
+              Text(
+                'Minha Conta',
+                style: TextStyle(
+                  color: _CoresApp.textoPrimario,
+                  fontSize: 13,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        const PopupMenuItem<String>(
+          value: 'sair',
+          height: 44,
+          child: Row(
+            children: [
+              Icon(
+                Icons.logout_rounded,
+                color: _CoresApp.vermelhoNegativo,
+                size: 18,
+              ),
+              SizedBox(width: 10),
+              Text(
+                'Sair',
+                style: TextStyle(
+                  color: _CoresApp.vermelhoNegativo,
+                  fontSize: 13,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
       child: Container(
         width: 36,
         height: 36,
@@ -600,14 +850,19 @@ class _AvatarUsuario extends StatelessWidget {
 class _CardPatrimonioTotal extends StatelessWidget {
   final String valorTotalFormatado;
   final String variacaoHojeFormatada;
+  final bool positiva;
 
   const _CardPatrimonioTotal({
     required this.valorTotalFormatado,
     required this.variacaoHojeFormatada,
+    this.positiva = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    final corVariacao =
+        positiva ? _CoresApp.verdePositivo : _CoresApp.vermelhoNegativo;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -649,17 +904,17 @@ class _CardPatrimonioTotal extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              const Icon(
-                Icons.north_east_rounded,
-                color: _CoresApp.verdePositivo,
+              Icon(
+                positiva ? Icons.north_east_rounded : Icons.south_east_rounded,
+                color: corVariacao,
                 size: 16,
               ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   variacaoHojeFormatada,
-                  style: const TextStyle(
-                    color: _CoresApp.verdePositivo,
+                  style: TextStyle(
+                    color: corVariacao,
                     fontSize: 13,
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w600,
@@ -880,14 +1135,18 @@ class _CardAtivo extends StatelessWidget {
 class _CardAtividadeRecente extends StatelessWidget {
   final String descricao;
   final String valorFormatado;
+  final bool positiva;
 
   const _CardAtividadeRecente({
     required this.descricao,
     required this.valorFormatado,
+    this.positiva = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cor = positiva ? _CoresApp.verdePositivo : _CoresApp.vermelhoNegativo;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
@@ -900,9 +1159,11 @@ class _CardAtividadeRecente extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.check_circle_outline_rounded,
-            color: _CoresApp.verdePositivo,
+          Icon(
+            positiva
+                ? Icons.check_circle_outline_rounded
+                : Icons.north_east_rounded,
+            color: cor,
             size: 18,
           ),
           const SizedBox(width: 10),
@@ -920,8 +1181,8 @@ class _CardAtividadeRecente extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             valorFormatado,
-            style: const TextStyle(
-              color: _CoresApp.verdePositivo,
+            style: TextStyle(
+              color: cor,
               fontSize: 13,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
