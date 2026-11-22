@@ -12,6 +12,7 @@ class ClienteModelo {
   final double saldoSol;
   final double saldoAda;
   final Map<String, dynamic>? ultimaTransacaoCripto;
+  final String status;
   final bool ativo;
   final bool isAdmin;
 
@@ -27,11 +28,15 @@ class ClienteModelo {
     this.saldoSol = 0.0,
     this.saldoAda = 0.0,
     this.ultimaTransacaoCripto,
+    this.status = 'pendente',
     this.ativo = true,
     this.isAdmin = false,
   });
 
   factory ClienteModelo.deMapa(Map<String, dynamic> mapa) {
+    final ativoMapa = mapa['ativo'] as bool? ?? true;
+    final statusMapa = mapa['status']?.toString().toLowerCase().trim();
+
     return ClienteModelo(
       nome: mapa['nome']?.toString() ?? '',
       cpf: mapa['cpf']?.toString() ?? '',
@@ -45,7 +50,10 @@ class ClienteModelo {
       saldoAda: (mapa['saldoAda'] as num?)?.toDouble() ?? 0.0,
       ultimaTransacaoCripto:
           mapa['ultimaTransacaoCripto'] as Map<String, dynamic>?,
-      ativo: mapa['ativo'] as bool? ?? true,
+      status: (statusMapa != null && statusMapa.isNotEmpty)
+          ? statusMapa
+          : (ativoMapa ? 'ativo' : 'bloqueado'),
+      ativo: ativoMapa,
       isAdmin: mapa['isAdmin'] == true ||
           mapa['tipo']?.toString().toLowerCase() == 'admin',
     );
@@ -65,6 +73,7 @@ class ClienteModelo {
       'saldoAda': saldoAda,
       if (ultimaTransacaoCripto != null)
         'ultimaTransacaoCripto': ultimaTransacaoCripto,
+      'status': status,
       'ativo': ativo,
       if (incluirDataServidor) ...{
         'criadoEm': FieldValue.serverTimestamp(),

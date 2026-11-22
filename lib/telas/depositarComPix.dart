@@ -14,6 +14,7 @@ class DepositarComPix extends StatefulWidget {
   final String nomeRecebedor;
   final String cidadeRecebedor;
   final void Function(String payloadPix)? aoGerarQrCode;
+  final Future<String?> Function(double valorBrl)? aoConfirmarDeposito;
   final VoidCallback? aoVoltar;
   final VoidCallback? aoClicarPerfil;
   final VoidCallback? aoClicarSair;
@@ -26,6 +27,7 @@ class DepositarComPix extends StatefulWidget {
     this.nomeRecebedor = 'BLOCKPAY EDU',
     this.cidadeRecebedor = 'SAO PAULO',
     this.aoGerarQrCode,
+    this.aoConfirmarDeposito,
     this.aoVoltar,
     this.aoClicarPerfil,
     this.aoClicarSair,
@@ -37,7 +39,52 @@ class DepositarComPix extends StatefulWidget {
 }
 
 class _DepositarComPixState extends State<DepositarComPix> {
+  final TextEditingController _valorController = TextEditingController(
+    text: '500,00',
+  );
+
   String? _payloadPixGerado;
+  double _valorQrGerado = 0.0;
+  bool _confirmandoPagamento = false;
+
+  static const List<double> _atalhosValores = [100.0, 500.0, 1000.0, 5000.0];
+
+  @override
+  void dispose() {
+    _valorController.dispose();
+    super.dispose();
+  }
+
+  double _parseValorReais() {
+    final limpo = _valorController.text
+        .replaceAll('R\$', '')
+        .replaceAll('.', '')
+        .replaceAll(',', '.')
+        .trim();
+    return double.tryParse(limpo) ?? 0.0;
+  }
+
+  String _formatarValorCampo(double valor) {
+    final partes = valor.toStringAsFixed(2).split('.');
+    final inteiro = partes[0];
+    final centavos = partes[1];
+    final buffer = StringBuffer();
+    for (var i = 0; i < inteiro.length; i++) {
+      if (i > 0 && (inteiro.length - i) % 3 == 0) {
+        buffer.write('.');
+      }
+      buffer.write(inteiro[i]);
+    }
+    return '${buffer.toString()},$centavos';
+  }
+
+  void _selecionarAtalhoValor(double valor) {
+    setState(() {
+      _valorController.text = _formatarValorCampo(valor);
+      _payloadPixGerado = null;
+      _valorQrGerado = 0.0;
+    });
+  }
 
   /// Formata um campo TLV (Tag + Tamanho em 2 digitos + Valor)
   String _formatarTlv(String tag, String valor) {
@@ -94,7 +141,7 @@ class _DepositarComPixState extends State<DepositarComPix> {
   }
 
   /// Monta a string completa do Pix Copia e Cola / QR Code no padrao EMVCo
-  String _montarBrCodePix() {
+  String _montarBrCodePix(double valor) {
     final gui = _formatarTlv('00', 'br.gov.bcb.pix');
     final chave = _formatarTlv('01', widget.chavePixRecebedor.trim());
     final merchantAccountInfo = _formatarTlv('26', '$gui$chave');
@@ -108,6 +155,8 @@ class _DepositarComPixState extends State<DepositarComPix> {
       merchantAccountInfo, // Merchant Account Information (Pix)
       _formatarTlv('52', '0000'), // Merchant Category Code
       _formatarTlv('53', '986'), // Moeda: 986 = BRL
+      if (valor > 0)
+        _formatarTlv('54', valor.toStringAsFixed(2)), // Valor do Pix
       _formatarTlv('58', 'BR'), // Pais: BR
       _formatarTlv('59', nomeNormalizado), // Nome do recebedor
       _formatarTlv('60', cidadeNormalizada), // Cidade do recebedor
@@ -120,11 +169,50 @@ class _DepositarComPixState extends State<DepositarComPix> {
   }
 
   void _gerarQrCodePix() {
-    final brCode = _montarBrCodePix();
+    final valor = _parseValorReais();
+    if (valor < 1.0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Informe um valor mínimo de R\$ 1,00 para depositar.'),
+          backgroundColor: CoresApp.vermelhoNegativo,
+        ),
+      );
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    final brCode = _montarBrCodePix(valor);
     setState(() {
       _payloadPixGerado = brCode;
+      _valorQrGerado = valor;
     });
     widget.aoGerarQrCode?.call(brCode);
+  }
+
+  Future<void> _confirmarPagamentoPix() async {
+    if (_confirmandoPagamento ||
+        _payloadPixGerado == null ||
+        _valorQrGerado < 1.0) {
+      return;
+    }
+
+    if (widget.aoConfirmarDeposito == null) return;
+
+    setState(() => _confirmandoPagamento = true);
+
+    final erro = await widget.aoConfirmarDeposito!(_valorQrGerado);
+
+    if (!mounted) return;
+    setState(() => _confirmandoPagamento = false);
+
+    if (erro != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(erro),
+          backgroundColor: CoresApp.vermelhoNegativo,
+        ),
+      );
+    }
   }
 
   Future<void> _copiarCodigoPix() async {
@@ -176,7 +264,7 @@ class _DepositarComPixState extends State<DepositarComPix> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Card informativo superior
+        // Card informativo superior + campo de valor do deposito
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -187,10 +275,10 @@ class _DepositarComPixState extends State<DepositarComPix> {
               width: 1,
             ),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Deposite via Pix',
                 style: TextStyle(
                   color: CoresApp.textoPrimario,
@@ -199,9 +287,9 @@ class _DepositarComPixState extends State<DepositarComPix> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
-                'Use o Pix para adicionar saldo à sua carteira de forma rápida e segura.',
+              const SizedBox(height: 8),
+              const Text(
+                'Informe o valor que deseja adicionar à sua carteira BlockPay.',
                 style: TextStyle(
                   color: CoresApp.textoSecundario,
                   fontSize: 13,
@@ -209,6 +297,107 @@ class _DepositarComPixState extends State<DepositarComPix> {
                   fontWeight: FontWeight.w400,
                   height: 1.4,
                 ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Valor do depósito (BRL)',
+                style: TextStyle(
+                  color: CoresApp.textoSecundario,
+                  fontSize: 12,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _valorController,
+                enabled: !_confirmandoPagamento,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  _FormatadorMoedaPixInput(),
+                ],
+                onChanged: (_) {
+                  if (_payloadPixGerado != null) {
+                    setState(() {
+                      _payloadPixGerado = null;
+                      _valorQrGerado = 0.0;
+                    });
+                  }
+                },
+                style: const TextStyle(
+                  color: CoresApp.textoPrimario,
+                  fontSize: 20,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w700,
+                ),
+                decoration: InputDecoration(
+                  prefixText: 'R\$ ',
+                  prefixStyle: const TextStyle(
+                    color: CoresApp.verdePositivo,
+                    fontSize: 20,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w700,
+                  ),
+                  filled: true,
+                  fillColor: CoresApp.fundo,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: CoresApp.borda,
+                      width: 1,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: CoresApp.verdePositivo,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  for (var i = 0; i < _atalhosValores.length; i++) ...[
+                    Expanded(
+                      child: InkWell(
+                        onTap: _confirmandoPagamento
+                            ? null
+                            : () => _selecionarAtalhoValor(_atalhosValores[i]),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: CoresApp.fundo,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: CoresApp.borda,
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            'R\$ ${_atalhosValores[i].toInt()}',
+                            style: const TextStyle(
+                              color: CoresApp.textoPrimario,
+                              fontSize: 11,
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (i < _atalhosValores.length - 1)
+                      const SizedBox(width: 8),
+                  ],
+                ],
               ),
             ],
           ),
@@ -239,7 +428,7 @@ class _DepositarComPixState extends State<DepositarComPix> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _gerarQrCodePix,
+                  onPressed: _confirmandoPagamento ? null : _gerarQrCodePix,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: CoresApp.verdePositivo,
                     foregroundColor: CoresApp.fundo,
@@ -275,13 +464,15 @@ class _DepositarComPixState extends State<DepositarComPix> {
         ),
         const SizedBox(height: 24),
 
-        // Area de exibicao do QR Code Pix
+        // Area de exibicao do QR Code Pix e confirmacao do pagamento
         Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text(
-              'QR Code Pix',
-              style: TextStyle(
+            Text(
+              qrGerado
+                  ? 'QR Code Pix — R\$ ${_formatarValorCampo(_valorQrGerado)}'
+                  : 'QR Code Pix',
+              style: const TextStyle(
                 color: CoresApp.textoSecundario,
                 fontSize: 14,
                 fontFamily: 'Inter',
@@ -316,7 +507,7 @@ class _DepositarComPixState extends State<DepositarComPix> {
             if (qrGerado) ...[
               const SizedBox(height: 14),
               OutlinedButton.icon(
-                onPressed: _copiarCodigoPix,
+                onPressed: _confirmandoPagamento ? null : _copiarCodigoPix,
                 icon: const Icon(
                   Icons.copy_rounded,
                   size: 16,
@@ -340,6 +531,48 @@ class _DepositarComPixState extends State<DepositarComPix> {
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed:
+                      _confirmandoPagamento ? null : _confirmarPagamentoPix,
+                  icon: _confirmandoPagamento
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: CoresApp.fundo,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 20,
+                          color: CoresApp.fundo,
+                        ),
+                  label: Text(
+                    _confirmandoPagamento
+                        ? 'Registrando na blockchain...'
+                        : 'Confirmar pagamento Pix',
+                    style: const TextStyle(
+                      color: CoresApp.fundo,
+                      fontSize: 15,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: CoresApp.cianoPrimario,
+                    foregroundColor: CoresApp.fundo,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
@@ -437,6 +670,43 @@ class _DepositarComPixState extends State<DepositarComPix> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Formata os digitos digitados no padrao monetario brasileiro (ex: 50000 -> 500,00)
+class _FormatadorMoedaPixInput extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digitos = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (digitos.isEmpty) {
+      return const TextEditingValue(
+        text: '0,00',
+        selection: TextSelection.collapsed(offset: 4),
+      );
+    }
+
+    final centavosInt = int.tryParse(digitos) ?? 0;
+    final valor = centavosInt / 100.0;
+    final partes = valor.toStringAsFixed(2).split('.');
+    final inteiro = partes[0];
+    final centavos = partes[1];
+
+    final buffer = StringBuffer();
+    for (var i = 0; i < inteiro.length; i++) {
+      if (i > 0 && (inteiro.length - i) % 3 == 0) {
+        buffer.write('.');
+      }
+      buffer.write(inteiro[i]);
+    }
+
+    final textoFormatado = '${buffer.toString()},$centavos';
+    return TextEditingValue(
+      text: textoFormatado,
+      selection: TextSelection.collapsed(offset: textoFormatado.length),
     );
   }
 }

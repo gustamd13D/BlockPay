@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'adminAjustesController.dart';
 import 'alterarSenhaController.dart';
+import 'auditoriaController.dart';
 import 'boasVindasController.dart';
 import 'cadastroClienteController.dart';
 import 'comprarCriptoController.dart';
+import 'criarUsuarioController.dart';
 import 'dashboardAdminController.dart';
 import 'dashboardController.dart';
 import 'depositarComPixController.dart';
+import 'detalhesUsuarioController.dart';
 import 'editarContaController.dart';
+import 'editarUsuarioController.dart';
+import 'gerenciarUsuariosController.dart';
 import 'historicoTransacoesController.dart';
 import 'loginController.dart';
 import 'mercadoCriptoController.dart';
@@ -22,6 +27,11 @@ abstract class RotasApp {
   static const String login = '/login';
   static const String painel = '/painel';
   static const String painelAdmin = '/painel-admin';
+  static const String gerenciarUsuarios = '/gerenciar-usuarios';
+  static const String detalhesUsuario = '/detalhes-usuario';
+  static const String criarUsuario = '/criar-usuario';
+  static const String editarUsuario = '/editar-usuario';
+  static const String auditoria = '/auditoria';
   static const String adminAjustes = '/admin-ajustes';
   static const String recuperarAcessoAdmin = '/recuperar-acesso-admin';
   static const String mercadoCripto = '/mercado-cripto';
@@ -54,6 +64,15 @@ class RouterController {
   static final DashboardController _dashboardController = DashboardController();
   static final DashboardAdminController _dashboardAdminController =
       DashboardAdminController();
+  static final GerenciarUsuarioController _gerenciarUsuariosController =
+      GerenciarUsuarioController();
+  static final DetalhesUsuarioController _detalhesUsuarioController =
+      DetalhesUsuarioController();
+  static final CriarUsuarioController _criarUsuarioController =
+      CriarUsuarioController();
+  static final EditarUsuarioController _editarUsuarioController =
+      EditarUsuarioController();
+  static final AuditoriaController _auditoriaController = AuditoriaController();
   static final AdminAjustesController _adminAjustesController =
       AdminAjustesController();
   static final MercadoCriptoController _mercadoCriptoController =
@@ -134,6 +153,41 @@ class RouterController {
           settings: settings,
           builder: (context) =>
               _dashboardAdminController.construirTela(context, args),
+        );
+
+      case RotasApp.gerenciarUsuarios:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) =>
+              _gerenciarUsuariosController.construirTela(context, args),
+        );
+
+      case RotasApp.detalhesUsuario:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) =>
+              _detalhesUsuarioController.construirTela(context, args),
+        );
+
+      case RotasApp.criarUsuario:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) =>
+              _criarUsuarioController.construirTela(context, args),
+        );
+
+      case RotasApp.editarUsuario:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) =>
+              _editarUsuarioController.construirTela(context, args),
+        );
+
+      case RotasApp.auditoria:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) =>
+              _auditoriaController.construirTela(context, args),
         );
 
       case RotasApp.adminAjustes:

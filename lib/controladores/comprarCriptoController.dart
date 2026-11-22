@@ -1,12 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../modelos/clienteModelo.dart';
+import '../servicos/servicoBlockchain.dart';
 import '../telas/comprarCripto.dart';
 import '../telas/mercadoCripto.dart';
 import 'baseController.dart';
 import 'loginController.dart';
 
 class ComprarCriptoController extends BaseController {
+  final ServicoBlockchain _servicoBlockchain;
+
+  ComprarCriptoController({ServicoBlockchain? servicoBlockchain})
+      : _servicoBlockchain = servicoBlockchain ?? ServicoBlockchain.instancia;
+
   String _campoSaldoPorSigla(String sigla) {
     switch (sigla.toUpperCase()) {
       case 'BTC':
@@ -66,7 +72,11 @@ class ComprarCriptoController extends BaseController {
 
             try {
               await firestore.runTransaction((transaction) async {
+                // 1. Leituras primeiro
                 final snap = await transaction.get(docClienteRef);
+                final prepBloco = await _servicoBlockchain
+                    .prepararRegistroNaTransacao(transaction);
+
                 if (!snap.exists) {
                   throw Exception('Conta do cliente não encontrada.');
                 }
@@ -91,8 +101,18 @@ class ComprarCriptoController extends BaseController {
                   (saldoCriptoAtual + fracaoCripto).toStringAsFixed(8),
                 );
 
+                // 2. Calculo da hash derivada do bloco
+                final registroTx = _servicoBlockchain.calcularRegistroTransacao(
+                  prepBloco,
+                  resumoDados:
+                      'COMPRA|${clienteAtual.cpf}|${ativo.sigla}|$fracaoCripto|$valorReais',
+                );
+
                 final dadosUltimaCompra = {
                   'tipo': 'compra',
+                  'hash': registroTx.hashTransacao,
+                  'indiceBloco': registroTx.indiceBloco,
+                  'hashBloco': registroTx.hashBloco,
                   'ativo': ativo.sigla,
                   'nomeAtivo': ativo.nome,
                   'quantidade': fracaoCripto,
@@ -101,6 +121,7 @@ class ComprarCriptoController extends BaseController {
                   'status': 'Confirmada',
                 };
 
+                // 3. Escritas depois
                 transaction.update(docClienteRef, {
                   'saldoBrl': novoSaldoBrl,
                   campoSaldoCripto: novoSaldoCripto,
@@ -110,9 +131,16 @@ class ComprarCriptoController extends BaseController {
                 transaction.set(firestore.collection('transacoes').doc(), {
                   'cpfCliente': clienteAtual.cpf,
                   'taxaRede': 0.0,
+                  'hashBlocoAnterior': registroTx.hashBlocoAnterior,
                   ...dadosUltimaCompra,
                   'criadoEm': FieldValue.serverTimestamp(),
                 });
+
+                _servicoBlockchain.aplicarEscritaNaTransacao(
+                  transaction,
+                  prepBloco,
+                  registroTx,
+                );
               });
 
               if (context.mounted) {

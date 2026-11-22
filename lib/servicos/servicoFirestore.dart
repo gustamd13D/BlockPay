@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../modelos/clienteModelo.dart';
 import '../utilitarios/seguranca.dart';
+import 'servicoBlockchain.dart';
 
 typedef MapaDados = Map<String, dynamic>;
 
@@ -17,6 +18,7 @@ class ExcecaoAutenticacao implements Exception {
 /// Servico central de acesso ao Cloud Firestore do BlockPay
 class ServicoFirestore {
   final FirebaseFirestore _banco;
+  final ServicoBlockchain _servicoBlockchain;
 
   static const String colecaoClientes = 'clientes';
   static const String colecaoAdmins = 'admins';
@@ -25,8 +27,11 @@ class ServicoFirestore {
   static const String subcolecaoTransacoes = 'transacoes';
   static const double saldoInicialSimulacao = 10000.0;
 
-  ServicoFirestore({FirebaseFirestore? banco})
-      : _banco = banco ?? FirebaseFirestore.instance;
+  ServicoFirestore({
+    FirebaseFirestore? banco,
+    ServicoBlockchain? servicoBlockchain,
+  })  : _banco = banco ?? FirebaseFirestore.instance,
+        _servicoBlockchain = servicoBlockchain ?? ServicoBlockchain.instancia;
 
   DocumentReference<MapaDados> _referenciaCliente(String cpf) {
     return _banco.collection(colecaoClientes).doc(cpf);
@@ -50,7 +55,7 @@ class ServicoFirestore {
     return null;
   }
 
-  /// Cadastra um novo cliente usando transacao atomica e cria o historico inicial
+  /// Cadastra um novo cliente com status pendente e registra hash no bloco atual
   Future<ClienteModelo> cadastrarCliente({
     required String nome,
     required String cpf,
@@ -67,12 +72,17 @@ class ServicoFirestore {
       email: email.trim().toLowerCase(),
       pinHash: SegurancaUtil.gerarHashPin(pin),
       saldoBrl: saldoInicialSimulacao,
+      status: 'pendente',
+      ativo: true,
       isAdmin: isAdmin,
     );
 
     try {
       await _banco.runTransaction((transacao) async {
+        // 1. Todas as leituras primeiro
         final snapshot = await transacao.get(docCliente);
+        final prepBloco =
+            await _servicoBlockchain.prepararRegistroNaTransacao(transacao);
 
         if (snapshot.exists) {
           throw const ExcecaoAutenticacao(
@@ -80,23 +90,33 @@ class ServicoFirestore {
           );
         }
 
-        final mapaCliente = novoCliente.paraMapa(incluirDataServidor: true);
-        mapaCliente['status'] = 'ativo';
-        mapaCliente['isAdmin'] = isAdmin;
+        // 2. Calculo da hash derivada do bloco ativo
+        final registroTx = _servicoBlockchain.calcularRegistroTransacao(
+          prepBloco,
+          resumoDados: 'BONUS_CADASTRO|$cpfLimpo|$saldoInicialSimulacao',
+        );
 
+        final mapaCliente = novoCliente.paraMapa(incluirDataServidor: true);
+        mapaCliente['status'] = 'pendente';
+        mapaCliente['ativo'] = true;
+        mapaCliente['isAdmin'] = isAdmin;
+        mapaCliente['tipo'] = isAdmin ? 'admin' : 'cliente';
+
+        // 3. Todas as escritas depois
         transacao.set(docCliente, mapaCliente);
 
-        // Registra na subcolecao do cliente
         final docTransacaoSub =
             docCliente.collection(subcolecaoTransacoes).doc();
         transacao.set(docTransacaoSub, {
           'tipo': 'BONUS_INICIAL',
           'descricao': 'Saldo inicial educativo BlockPay EDU',
           'valorBrl': saldoInicialSimulacao,
+          'hash': registroTx.hashTransacao,
+          'indiceBloco': registroTx.indiceBloco,
+          'hashBloco': registroTx.hashBloco,
           'dataHora': FieldValue.serverTimestamp(),
         });
 
-        // Registra na colecao global para Historico e Dashboard Admin
         final docTransacaoGlobal = _banco.collection(colecaoTransacoes).doc();
         transacao.set(docTransacaoGlobal, {
           'cpfCliente': cpfLimpo,
@@ -104,8 +124,18 @@ class ServicoFirestore {
           'titulo': 'Bônus de cadastro',
           'valorBrl': saldoInicialSimulacao,
           'status': 'Confirmada',
+          'hash': registroTx.hashTransacao,
+          'indiceBloco': registroTx.indiceBloco,
+          'hashBloco': registroTx.hashBloco,
+          'hashBlocoAnterior': registroTx.hashBlocoAnterior,
           'criadoEm': FieldValue.serverTimestamp(),
         });
+
+        _servicoBlockchain.aplicarEscritaNaTransacao(
+          transacao,
+          prepBloco,
+          registroTx,
+        );
       });
 
       return novoCliente;
@@ -122,7 +152,82 @@ class ServicoFirestore {
     }
   }
 
-  /// Valida CPF e PIN no Firestore (clientes ou admins) e retorna o usuario autenticado
+  /// Registra um deposito via Pix creditando o saldo BRL e gerando hash na blockchain
+  Future<RegistroTransacaoBlockchain> registrarDepositoPix({
+    required String cpf,
+    required double valorBrl,
+    String titulo = 'Depósito Pix',
+  }) async {
+    final cpfLimpo = cpf.replaceAll(RegExp(r'\D'), '');
+    final docCliente = _referenciaCliente(cpfLimpo);
+
+    try {
+      late RegistroTransacaoBlockchain registroGerado;
+
+      await _banco.runTransaction((transacao) async {
+        // 1. Leituras primeiro
+        final snapshot = await transacao.get(docCliente);
+        final prepBloco =
+            await _servicoBlockchain.prepararRegistroNaTransacao(transacao);
+
+        if (!snapshot.exists || snapshot.data() == null) {
+          throw const ExcecaoAutenticacao('Conta do cliente não encontrada.');
+        }
+
+        final dados = snapshot.data()!;
+        final saldoAtual = (dados['saldoBrl'] as num?)?.toDouble() ?? 0.0;
+        final novoSaldo = double.parse(
+          (saldoAtual + valorBrl).toStringAsFixed(2),
+        );
+
+        // 2. Calculo da hash derivada do bloco
+        registroGerado = _servicoBlockchain.calcularRegistroTransacao(
+          prepBloco,
+          resumoDados: 'DEPOSITO_PIX|$cpfLimpo|$valorBrl',
+        );
+
+        // 3. Escritas depois
+        transacao.update(docCliente, {
+          'saldoBrl': novoSaldo,
+          'atualizadoEm': FieldValue.serverTimestamp(),
+        });
+
+        final docTransacaoGlobal = _banco.collection(colecaoTransacoes).doc();
+        transacao.set(docTransacaoGlobal, {
+          'cpfCliente': cpfLimpo,
+          'tipo': 'deposito',
+          'titulo': titulo,
+          'valorBrl': valorBrl,
+          'status': 'Confirmada',
+          'hash': registroGerado.hashTransacao,
+          'indiceBloco': registroGerado.indiceBloco,
+          'hashBloco': registroGerado.hashBloco,
+          'hashBlocoAnterior': registroGerado.hashBlocoAnterior,
+          'criadoEm': FieldValue.serverTimestamp(),
+        });
+
+        _servicoBlockchain.aplicarEscritaNaTransacao(
+          transacao,
+          prepBloco,
+          registroGerado,
+        );
+      });
+
+      return registroGerado;
+    } on ExcecaoAutenticacao {
+      rethrow;
+    } on FirebaseException catch (erro) {
+      throw ExcecaoAutenticacao(
+        'Erro ao registrar depósito Pix (${erro.code}).',
+      );
+    } catch (_) {
+      throw const ExcecaoAutenticacao(
+        'Não foi possível processar o depósito Pix agora.',
+      );
+    }
+  }
+
+  /// Valida CPF e PIN no Firestore, ativa conta pendente no primeiro acesso e registra ultimo acesso
   Future<ClienteModelo> autenticarCliente({
     required String cpf,
     required String pin,
@@ -163,6 +268,29 @@ class ServicoFirestore {
       final hashInformado = SegurancaUtil.gerarHashPin(pin);
       if (cliente.pinHash != hashInformado) {
         throw const ExcecaoAutenticacao('PIN incorreto. Tente novamente.');
+      }
+
+      // No primeiro acesso, promove o status de pendente para ativo
+      final bool primeiroAcessoPendente = status == 'pendente';
+      final atualizacoes = <String, dynamic>{
+        'ultimoAcesso': FieldValue.serverTimestamp(),
+        if (primeiroAcessoPendente) ...{
+          'status': 'ativo',
+          'ativo': true,
+          'atualizadoEm': FieldValue.serverTimestamp(),
+        },
+      };
+
+      try {
+        await snapshot.reference.update(atualizacoes);
+      } catch (_) {}
+
+      if (primeiroAcessoPendente) {
+        return ClienteModelo.deMapa({
+          ...mapaNormalizado,
+          'status': 'ativo',
+          'ativo': true,
+        });
       }
 
       return cliente;
@@ -206,6 +334,36 @@ class ServicoFirestore {
     } on FirebaseException catch (erro) {
       throw ExcecaoAutenticacao(
         'Erro ao atualizar status (${erro.code}).',
+      );
+    }
+  }
+
+  /// Exclui um usuario e suas subcolecoes (uso Admin)
+  Future<void> excluirUsuario({required String cpf}) async {
+    final cpfLimpo = cpf.replaceAll(RegExp(r'\D'), '');
+    final docUsuario = _referenciaCliente(cpfLimpo);
+
+    try {
+      final carteiraSnap =
+          await docUsuario.collection(subcolecaoCarteira).get();
+      for (final item in carteiraSnap.docs) {
+        await item.reference.delete();
+      }
+
+      final transacoesSnap =
+          await docUsuario.collection(subcolecaoTransacoes).get();
+      for (final item in transacoesSnap.docs) {
+        await item.reference.delete();
+      }
+
+      await docUsuario.delete();
+    } on FirebaseException catch (erro) {
+      throw ExcecaoAutenticacao(
+        'Erro ao excluir usuário (${erro.code}).',
+      );
+    } catch (_) {
+      throw const ExcecaoAutenticacao(
+        'Não foi possível excluir o usuário agora.',
       );
     }
   }
@@ -320,7 +478,6 @@ class ServicoFirestore {
         throw const ExcecaoAutenticacao('Conta não encontrada.');
       }
 
-      // Se a senha atual foi informada (modo configuracoes/admin), valida antes de trocar
       if (senhaAtual != null) {
         final dados = snapshot.data()!;
         final cliente = ClienteModelo.deMapa({

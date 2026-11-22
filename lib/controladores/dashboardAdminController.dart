@@ -85,8 +85,16 @@ class DashboardAdminController extends BaseController {
           if (isAdmin) continue;
 
           totalUsuarios++;
-          final status =
-              (dados['status'] ?? 'ativo').toString().toLowerCase().trim();
+          final ativoFlag = dados['ativo'] != false;
+          String status =
+              (dados['status'] ?? (ativoFlag ? 'ativo' : 'bloqueado'))
+                  .toString()
+                  .toLowerCase()
+                  .trim();
+
+          if (!ativoFlag && status != 'bloqueado') {
+            status = 'bloqueado';
+          }
 
           if (status == 'bloqueado') {
             usuariosBloqueados++;
@@ -109,6 +117,8 @@ class DashboardAdminController extends BaseController {
             );
           }
         }
+
+        final nomeAdminAtual = mapaNomesPorCpf[args.cpf] ?? args.nome;
 
         return StreamBuilder<QuerySnapshot>(
           stream: firestore.collection('transacoes').snapshots(),
@@ -182,7 +192,7 @@ class DashboardAdminController extends BaseController {
             ]..sort((a, b) => b.dataHora.compareTo(a.dataHora));
 
             return DashboardAdmin(
-              iniciaisUsuario: extrairIniciais(args.nome),
+              iniciaisUsuario: extrairIniciais(nomeAdminAtual),
               totalUsuarios: totalUsuarios,
               usuariosAtivos: usuariosAtivos,
               usuariosPendentes: usuariosPendentes,

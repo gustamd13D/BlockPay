@@ -1,46 +1,12 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import '../componentes/cabecalhoDesktopWrapper.dart';
 import '../componentes/cabecalhoMobileWrapper.dart';
 import '../componentes/coresApp.dart';
 import '../componentes/menuInferiorWrapper.dart';
+import '../servicos/servicoCotacoes.dart';
 
-/// Modelo de representacao de um ativo exibido no mercado
-class AtivoMercado {
-  final String idApi;
-  final String sigla;
-  final String nome;
-  final double precoBrl;
-  final double variacao24h;
-  final List<double> pontosGrafico;
-
-  const AtivoMercado({
-    required this.idApi,
-    required this.sigla,
-    required this.nome,
-    required this.precoBrl,
-    required this.variacao24h,
-    required this.pontosGrafico,
-  });
-
-  AtivoMercado copiarCom({
-    double? precoBrl,
-    double? variacao24h,
-    List<double>? pontosGrafico,
-  }) {
-    return AtivoMercado(
-      idApi: idApi,
-      sigla: sigla,
-      nome: nome,
-      precoBrl: precoBrl ?? this.precoBrl,
-      variacao24h: variacao24h ?? this.variacao24h,
-      pontosGrafico: pontosGrafico ?? this.pontosGrafico,
-    );
-  }
-}
+export '../servicos/servicoCotacoes.dart' show AtivoMercado;
 
 class MercadoCripto extends StatefulWidget {
   final String iniciaisUsuario;
@@ -65,144 +31,18 @@ class MercadoCripto extends StatefulWidget {
 }
 
 class _MercadoCriptoState extends State<MercadoCripto> {
-  List<AtivoMercado> _ativos = const [
-    AtivoMercado(
-      idApi: 'bitcoin',
-      sigla: 'BTC',
-      nome: 'Bitcoin',
-      precoBrl: 310450.00,
-      variacao24h: 3.4,
-      pontosGrafico: [0.25, 0.38, 0.32, 0.65, 0.58, 0.88, 0.95],
-    ),
-    AtivoMercado(
-      idApi: 'ethereum',
-      sigla: 'ETH',
-      nome: 'Ethereum',
-      precoBrl: 16200.00,
-      variacao24h: -1.2,
-      pontosGrafico: [0.92, 0.78, 0.62, 0.22, 0.38, 0.60, 0.45],
-    ),
-    AtivoMercado(
-      idApi: 'solana',
-      sigla: 'SOL',
-      nome: 'Solana',
-      precoBrl: 680.00,
-      variacao24h: 12.5,
-      pontosGrafico: [0.15, 0.28, 0.42, 0.56, 0.48, 0.82, 0.95],
-    ),
-    AtivoMercado(
-      idApi: 'cardano',
-      sigla: 'ADA',
-      nome: 'Cardano',
-      precoBrl: 2.45,
-      variacao24h: -0.5,
-      pontosGrafico: [0.90, 0.68, 0.80, 0.58, 0.25, 0.48, 0.35],
-    ),
-  ];
-
-  Timer? _temporizadorCotacao;
+  final ServicoCotacoes _servicoCotacoes = ServicoCotacoes.instancia;
 
   @override
   void initState() {
     super.initState();
-    _buscarCotacoesMercado();
-    _temporizadorCotacao = Timer.periodic(
-      const Duration(seconds: 60),
-      (_) => _buscarCotacoesMercado(),
-    );
+    _servicoCotacoes.iniciarAtualizacaoAutomatica();
   }
 
   @override
   void dispose() {
-    _temporizadorCotacao?.cancel();
+    _servicoCotacoes.pararAtualizacaoAutomatica();
     super.dispose();
-  }
-
-  Future<void> _buscarCotacoesMercado() async {
-    try {
-      final uriCoinGecko = Uri.parse(
-        'https://api.coingecko.com/api/v3/simple/price'
-        '?ids=bitcoin,ethereum,solana,cardano&vs_currencies=brl&include_24hr_change=true',
-      );
-      final resposta =
-          await http.get(uriCoinGecko).timeout(const Duration(seconds: 8));
-
-      if (resposta.statusCode == 200) {
-        final json = jsonDecode(resposta.body) as Map<String, dynamic>;
-        if (!mounted) return;
-
-        setState(() {
-          _ativos = _ativos.map((ativo) {
-            final dados = json[ativo.idApi] as Map<String, dynamic>?;
-            if (dados == null) return ativo;
-
-            final novoPreco =
-                (dados['brl'] as num?)?.toDouble() ?? ativo.precoBrl;
-            final novaVariacao =
-                (dados['brl_24h_change'] as num?)?.toDouble() ??
-                    ativo.variacao24h;
-
-            return ativo.copiarCom(
-              precoBrl: novoPreco,
-              variacao24h: novaVariacao,
-              pontosGrafico: _gerarPontosTendencia(novaVariacao),
-            );
-          }).toList();
-        });
-        return;
-      }
-    } catch (_) {
-      // Tenta fallback abaixo
-    }
-
-    try {
-      final uriAwesome = Uri.parse(
-        'https://economia.awesomeapi.com.br/json/last/BTC-BRL,ETH-BRL,SOL-BRL',
-      );
-      final resposta =
-          await http.get(uriAwesome).timeout(const Duration(seconds: 8));
-
-      if (resposta.statusCode == 200) {
-        final json = jsonDecode(resposta.body) as Map<String, dynamic>;
-        if (!mounted) return;
-
-        final mapaChaves = {
-          'BTC': 'BTCBRL',
-          'ETH': 'ETHBRL',
-          'SOL': 'SOLBRL',
-        };
-
-        setState(() {
-          _ativos = _ativos.map((ativo) {
-            final chave = mapaChaves[ativo.sigla];
-            if (chave == null) return ativo;
-            final dados = json[chave] as Map<String, dynamic>?;
-            if (dados == null) return ativo;
-
-            final novoPreco = double.tryParse(dados['bid']?.toString() ?? '') ??
-                ativo.precoBrl;
-            final novaVariacao =
-                double.tryParse(dados['pctChange']?.toString() ?? '') ??
-                    ativo.variacao24h;
-
-            return ativo.copiarCom(
-              precoBrl: novoPreco,
-              variacao24h: novaVariacao,
-              pontosGrafico: _gerarPontosTendencia(novaVariacao),
-            );
-          }).toList();
-        });
-      }
-    } catch (_) {
-      // Mantem cotacoes atuais caso esteja offline
-    }
-  }
-
-  List<double> _gerarPontosTendencia(double variacao) {
-    if (variacao >= 0) {
-      return const [0.22, 0.35, 0.30, 0.62, 0.54, 0.85, 0.96];
-    }
-    return const [0.92, 0.76, 0.65, 0.25, 0.40, 0.56, 0.38];
   }
 
   static String _formatarMoeda(double valor) {
@@ -258,33 +98,38 @@ class _MercadoCriptoState extends State<MercadoCripto> {
   }
 
   Widget _construirConteudoLista() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Cotações em tempo real',
-          style: TextStyle(
-            color: CoresApp.textoSecundario,
-            fontSize: 13,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ..._ativos.map(
-          (ativo) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _CardCriptoMercado(
-              ativo: ativo,
-              precoFormatado: _formatarMoeda(ativo.precoBrl),
-              variacaoFormatada: _formatarPercentual(ativo.variacao24h),
-              aoClicar: () => widget.aoSelecionarAtivo?.call(ativo),
+    return ValueListenableBuilder<List<AtivoMercado>>(
+      valueListenable: _servicoCotacoes.ativosNotifier,
+      builder: (context, ativos, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Cotações em tempo real',
+              style: TextStyle(
+                color: CoresApp.textoSecundario,
+                fontSize: 13,
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w400,
+              ),
             ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const _BannerDicaMercado(),
-      ],
+            const SizedBox(height: 16),
+            ...ativos.map(
+              (ativo) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _CardCriptoMercado(
+                  ativo: ativo,
+                  precoFormatado: _formatarMoeda(ativo.precoBrl),
+                  variacaoFormatada: _formatarPercentual(ativo.variacao24h),
+                  aoClicar: () => widget.aoSelecionarAtivo?.call(ativo),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const _BannerDicaMercado(),
+          ],
+        );
+      },
     );
   }
 

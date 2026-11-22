@@ -5,7 +5,7 @@ import '../modelos/clienteModelo.dart';
 import 'routerController.dart';
 
 abstract class BaseController {
-  /// Exibe um indicador de carregamento modal enquanto executa uma operacao assincrona
+  // Exibe um indicador de carregamento modal enquanto executa uma operacao assincrona
   Future<T?> executarComCarregamento<T>(
     BuildContext context,
     Future<T> Function() operacao,
@@ -38,7 +38,7 @@ abstract class BaseController {
     }
   }
 
-  /// Extrai as iniciais do nome do usuario para o avatar
+  // Extrai as iniciais do nome do usuario para o avatar
   String extrairIniciais(String nomeCompleto) {
     final partes = nomeCompleto.trim().split(RegExp(r'\s+'));
     if (partes.isEmpty || partes.first.isEmpty) return 'BP';
@@ -48,7 +48,7 @@ abstract class BaseController {
     return '${partes.first[0]}${partes.last[0]}'.toUpperCase();
   }
 
-  /// Formata valores monetarios no padrao brasileiro (R$ 10.000,00)
+  // Formata valores monetarios no padrao brasileiro (R$ 10.000,00)
   String formatarMoedaBr(double valor) {
     final partes = valor.abs().toStringAsFixed(2).split('.');
     final inteiro = partes[0];
@@ -61,7 +61,7 @@ abstract class BaseController {
     return 'R\$ ${buffer.toString()},$centavos';
   }
 
-  /// Exibe feedback padrao para modulos ainda em desenvolvimento
+  // Exibe feedback padrao para modulos ainda em desenvolvimento
   void avisarTelaEmBreve(BuildContext context, String nomeTela) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -72,7 +72,7 @@ abstract class BaseController {
     );
   }
 
-  /// Abre a tela de perfil/ajustes conforme o tipo de usuario (comum ou admin)
+  // Abre a tela de perfil/ajustes conforme o tipo de usuario (comum ou admin)
   void abrirPerfil(BuildContext context, ClienteModelo cliente) {
     final rotaDestino =
         cliente.isAdmin ? RotasApp.adminAjustes : RotasApp.editarConta;
@@ -88,7 +88,7 @@ abstract class BaseController {
     );
   }
 
-  /// Encerra a sessao atual e retorna para a tela de login
+  // Encerra a sessao atual e retorna para a tela de login
   void sairDaConta(BuildContext context) {
     Navigator.pushNamedAndRemoveUntil(
       context,
@@ -97,7 +97,7 @@ abstract class BaseController {
     );
   }
 
-  /// Gerencia a navegacao padrao das abas do cliente (0: Inicio, 1: Mercado, 2: Pix, 3: Historico)
+  // Gerencia a navegacao padrao das abas do cliente (0: Inicio, 1: Mercado, 2: Pix, 3: Historico)
   void navegarPeloMenu(
     BuildContext context,
     ClienteModelo cliente,
@@ -155,7 +155,7 @@ abstract class BaseController {
     }
   }
 
-  /// Gerencia a navegacao padrao das abas do admin (0: Visao geral, 1: Usuarios, 2: Auditoria, 3: Ajustes)
+  // Gerencia a navegacao padrao das abas do admin (0: Visao geral, 1: Usuarios, 2: Auditoria, 3: Ajustes)
   void navegarPeloMenuAdmin(
     BuildContext context,
     ClienteModelo admin,
@@ -175,11 +175,37 @@ abstract class BaseController {
         break;
 
       case 1:
-        avisarTelaEmBreve(context, 'Usuários');
+        if (rotaAtual == RotasApp.gerenciarUsuarios) return;
+        if (rotaAtual == RotasApp.painelAdmin) {
+          Navigator.pushNamed(
+            context,
+            RotasApp.gerenciarUsuarios,
+            arguments: admin,
+          );
+        } else {
+          Navigator.pushReplacementNamed(
+            context,
+            RotasApp.gerenciarUsuarios,
+            arguments: admin,
+          );
+        }
         break;
 
       case 2:
-        avisarTelaEmBreve(context, 'Auditoria');
+        if (rotaAtual == RotasApp.auditoria) return;
+        if (rotaAtual == RotasApp.painelAdmin) {
+          Navigator.pushNamed(
+            context,
+            RotasApp.auditoria,
+            arguments: admin,
+          );
+        } else {
+          Navigator.pushReplacementNamed(
+            context,
+            RotasApp.auditoria,
+            arguments: admin,
+          );
+        }
         break;
 
       case 3:

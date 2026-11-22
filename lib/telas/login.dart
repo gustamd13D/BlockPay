@@ -246,7 +246,7 @@ class _CabecalhoLogo extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'Aprenda a investir em criptomoedas de forma e segura.',
+            'Aprenda a investir em criptomoedas de forma simples e segura.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: _CoresApp.textoSecundario,

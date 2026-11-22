@@ -1,23 +1,23 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../modelos/clienteModelo.dart';
+import '../servicos/servicoBlockchain.dart';
+import '../servicos/servicoCotacoes.dart';
 import '../telas/transferirCripto.dart';
-import 'routerController.dart';
 import 'baseController.dart';
 import 'loginController.dart';
+import 'routerController.dart';
 
 class TransferirCriptoController extends BaseController {
-  String _gerarHashBlockchain() {
-    final aleatorio = Random.secure();
-    const hexChars = '0123456789abcdef';
-    final buffer = StringBuffer('0x');
-    for (var i = 0; i < 64; i++) {
-      buffer.write(hexChars[aleatorio.nextInt(hexChars.length)]);
-    }
-    return buffer.toString();
-  }
+  final ServicoBlockchain _servicoBlockchain;
+  final ServicoCotacoes _servicoCotacoes;
+
+  TransferirCriptoController({
+    ServicoBlockchain? servicoBlockchain,
+    ServicoCotacoes? servicoCotacoes,
+  })  : _servicoBlockchain = servicoBlockchain ?? ServicoBlockchain.instancia,
+        _servicoCotacoes = servicoCotacoes ?? ServicoCotacoes.instancia;
 
   String _campoSaldoPorAtivo(String ativo) {
     switch (ativo.toUpperCase()) {
@@ -55,7 +55,6 @@ class TransferirCriptoController extends BaseController {
     final texto = destinatario.trim();
     final textoMinusculo = texto.toLowerCase();
 
-    // 1. Busca por e-mail (exato e minusculo)
     var consulta = await firestore
         .collection('clientes')
         .where('email', isEqualTo: textoMinusculo)
@@ -71,7 +70,6 @@ class TransferirCriptoController extends BaseController {
     }
     if (consulta.docs.isNotEmpty) return consulta.docs.first;
 
-    // 2. Busca por CPF (11 digitos)
     final apenasDigitos = texto.replaceAll(RegExp(r'\D'), '');
     if (apenasDigitos.length == 11) {
       final docPorCpf =
@@ -79,7 +77,6 @@ class TransferirCriptoController extends BaseController {
       if (docPorCpf.exists) return docPorCpf;
     }
 
-    // 3. Busca por endereco de carteira (se cadastrado no documento)
     final consultaCarteira = await firestore
         .collection('clientes')
         .where('enderecoCarteira', isEqualTo: texto)
@@ -118,7 +115,6 @@ class TransferirCriptoController extends BaseController {
           aoTransferir: (destinatario, ativo, quantidade) async {
             final firestore = FirebaseFirestore.instance;
 
-            // 1. Verifica se o destinatario realmente existe no Firestore
             final docDestinatario =
                 await _buscarDestinatarioCadastrado(firestore, destinatario);
 
@@ -136,38 +132,27 @@ class TransferirCriptoController extends BaseController {
               return 'A conta deste destinatário está inativa.';
             }
 
-            // 2. Executa atualizacao atomica no Firestore validando o saldo atual
-            final hashGerada = _gerarHashBlockchain();
+            await _servicoCotacoes.atualizarCotacoes();
+            final cotacaoUnitaria = _servicoCotacoes.obterCotacaoBrl(ativo);
+            final valorBrlEstimado = double.parse(
+              (quantidade * cotacaoUnitaria).toStringAsFixed(2),
+            );
+
             final campoSaldo = _campoSaldoPorAtivo(ativo);
             final saldoPadrao = _saldoPadraoPorAtivo(ativo);
             final docRemetenteRef =
                 firestore.collection('clientes').doc(clienteAtual.cpf);
 
-            final dadosTransacaoEnvio = {
-              'tipo': 'envio',
-              'hash': hashGerada,
-              'ativo': ativo,
-              'quantidade': quantidade,
-              'destinatario': destinatario,
-              'nomeDestinatario': dadosDest['nome'] ?? destinatario,
-              'status': 'Confirmado na blockchain',
-            };
-
-            final dadosTransacaoRecebimento = {
-              'tipo': 'recebimento',
-              'hash': hashGerada,
-              'ativo': ativo,
-              'quantidade': quantidade,
-              'remetente': clienteAtual.email,
-              'nomeRemetente': clienteAtual.nome,
-              'status': 'Confirmado na blockchain',
-            };
+            late Map<String, dynamic> dadosTransacaoEnvio;
 
             try {
               await firestore.runTransaction((transaction) async {
+                // 1. Todas as leituras primeiro
                 final snapRemetente = await transaction.get(docRemetenteRef);
                 final snapDestinatario =
                     await transaction.get(docDestinatario.reference);
+                final prepBloco = await _servicoBlockchain
+                    .prepararRegistroNaTransacao(transaction);
 
                 if (!snapRemetente.exists || !snapDestinatario.exists) {
                   throw Exception('Conta não encontrada no banco de dados.');
@@ -197,6 +182,42 @@ class TransferirCriptoController extends BaseController {
                   (saldoAnteriorDestinatario + quantidade).toStringAsFixed(8),
                 );
 
+                // 2. Calculo da hash derivada do bloco ativo
+                final registroTx = _servicoBlockchain.calcularRegistroTransacao(
+                  prepBloco,
+                  resumoDados:
+                      'TRANSFERENCIA|${clienteAtual.cpf}|${docDestinatario.id}|$ativo|$quantidade',
+                );
+
+                dadosTransacaoEnvio = {
+                  'tipo': 'envio',
+                  'hash': registroTx.hashTransacao,
+                  'indiceBloco': registroTx.indiceBloco,
+                  'hashBloco': registroTx.hashBloco,
+                  'ativo': ativo,
+                  'quantidade': quantidade,
+                  'cotacaoUnitaria': cotacaoUnitaria,
+                  'valorBrl': valorBrlEstimado,
+                  'destinatario': destinatario,
+                  'nomeDestinatario': dadosDest['nome'] ?? destinatario,
+                  'status': 'Confirmado na blockchain',
+                };
+
+                final dadosTransacaoRecebimento = {
+                  'tipo': 'recebimento',
+                  'hash': registroTx.hashTransacao,
+                  'indiceBloco': registroTx.indiceBloco,
+                  'hashBloco': registroTx.hashBloco,
+                  'ativo': ativo,
+                  'quantidade': quantidade,
+                  'cotacaoUnitaria': cotacaoUnitaria,
+                  'valorBrl': valorBrlEstimado,
+                  'remetente': clienteAtual.email,
+                  'nomeRemetente': clienteAtual.nome,
+                  'status': 'Confirmado na blockchain',
+                };
+
+                // 3. Todas as escritas depois
                 transaction.update(docRemetenteRef, {
                   campoSaldo: novoSaldoRemetente,
                   'ultimaTransacaoCripto': dadosTransacaoEnvio,
@@ -210,9 +231,16 @@ class TransferirCriptoController extends BaseController {
                 transaction.set(firestore.collection('transacoes').doc(), {
                   'cpfRemetente': clienteAtual.cpf,
                   'cpfDestinatario': docDestinatario.id,
+                  'hashBlocoAnterior': registroTx.hashBlocoAnterior,
                   ...dadosTransacaoEnvio,
                   'criadoEm': FieldValue.serverTimestamp(),
                 });
+
+                _servicoBlockchain.aplicarEscritaNaTransacao(
+                  transaction,
+                  prepBloco,
+                  registroTx,
+                );
               });
             } catch (erro) {
               return erro.toString().replaceFirst('Exception: ', '');
