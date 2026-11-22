@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../modelos/clienteModelo.dart';
 import '../telas/statusBlockchain.dart';
-import 'routerController.dart';
 import 'baseController.dart';
 import 'loginController.dart';
 
@@ -23,17 +22,9 @@ class StatusBlockchainController extends BaseController {
       quantidade: (transacao?['quantidade'] as num?)?.toDouble(),
       destinatario: transacao?['destinatario']?.toString(),
       animarConfirmacao: animar,
-      aoClicarPerfil: () {
-        Navigator.pushNamed(
-          context,
-          RotasApp.editarConta,
-          arguments: cliente,
-        );
-      },
-      aoClicarInicio: () => Navigator.pop(context),
-      aoClicarMercado: () => avisarTelaEmBreve(context, 'Mercado'),
-      aoClicarPix: () => avisarTelaEmBreve(context, 'Pix'),
-      aoClicarHistorico: () => avisarTelaEmBreve(context, 'Histórico'),
+      aoClicarPerfil: () => abrirPerfil(context, cliente),
+      aoClicarSair: () => sairDaConta(context),
+      aoSelecionarAba: (indice) => navegarPeloMenu(context, cliente, indice),
     );
   }
 }

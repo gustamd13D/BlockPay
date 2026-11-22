@@ -5,7 +5,6 @@ import '../telas/comprarCripto.dart';
 import '../telas/mercadoCripto.dart';
 import 'baseController.dart';
 import 'loginController.dart';
-import 'routerController.dart';
 
 class ComprarCriptoController extends BaseController {
   String _campoSaldoPorSigla(String sigla) {
@@ -135,26 +134,10 @@ class ComprarCriptoController extends BaseController {
             }
           },
           aoVoltar: () => Navigator.pop(context),
-          aoClicarPerfil: () {
-            Navigator.pushNamed(
-              context,
-              RotasApp.editarConta,
-              arguments: clienteAtual,
-            );
-          },
-          aoClicarSair: () {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              RotasApp.login,
-              (_) => false,
-            );
-          },
-          aoClicarInicio: () {
-            Navigator.popUntil(context, ModalRoute.withName(RotasApp.painel));
-          },
-          aoClicarMercado: () => Navigator.pop(context),
-          aoClicarPix: () => avisarTelaEmBreve(context, 'Pix'),
-          aoClicarHistorico: () => avisarTelaEmBreve(context, 'Histórico'),
+          aoClicarPerfil: () => abrirPerfil(context, clienteAtual),
+          aoClicarSair: () => sairDaConta(context),
+          aoSelecionarAba: (indice) =>
+              navegarPeloMenu(context, clienteAtual, indice),
         );
       },
     );

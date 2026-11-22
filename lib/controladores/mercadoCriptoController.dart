@@ -24,24 +24,9 @@ class MercadoCriptoController extends BaseController {
         );
       },
       aoVoltar: () => Navigator.pop(context),
-      aoClicarPerfil: () {
-        Navigator.pushNamed(
-          context,
-          RotasApp.editarConta,
-          arguments: args,
-        );
-      },
-      aoClicarSair: () {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          RotasApp.login,
-          (_) => false,
-        );
-      },
-      aoClicarInicio: () => Navigator.pop(context),
-      aoClicarMercado: () {},
-      aoClicarPix: () => avisarTelaEmBreve(context, 'Pix'),
-      aoClicarHistorico: () => avisarTelaEmBreve(context, 'Histórico'),
+      aoClicarPerfil: () => abrirPerfil(context, args),
+      aoClicarSair: () => sairDaConta(context),
+      aoSelecionarAba: (indice) => navegarPeloMenu(context, args, indice),
     );
   }
 }

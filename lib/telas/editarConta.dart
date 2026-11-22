@@ -1,19 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-/// Paleta de cores centralizada do sistema de design BlockPay
-abstract class _CoresApp {
-  static const Color fundo = Color(0xFF0B0E17);
-  static const Color superficie = Color(0xFF151A26);
-  static const Color superficieDesabilitada = Color(0xFF1A2230);
-  static const Color superficieAvatar = Color(0xFF21293A);
-  static const Color borda = Color(0xFF2A354A);
-  static const Color cianoPrimario = Color(0xFF00E5FF);
-  static const Color cianoSuave = Color(0x1500E5FF);
-  static const Color vermelhoErro = Color(0xFFFF5252);
-  static const Color textoPrimario = Colors.white;
-  static const Color textoSecundario = Color(0xFF90A4AE);
-}
+import '../componentes/cabecalhoDesktopWrapper.dart';
+import '../componentes/cabecalhoMobileWrapper.dart';
+import '../componentes/coresApp.dart';
+import '../componentes/menuInferiorWrapper.dart';
 
 class EditarConta extends StatefulWidget {
   final String nome;
@@ -25,10 +15,9 @@ class EditarConta extends StatefulWidget {
   final void Function(String nome, String email, String telefone)?
       salvarAlteracoes;
   final VoidCallback? aoClicarAlterarSenha;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
+  final VoidCallback? aoClicarPerfil;
+  final VoidCallback? aoClicarSair;
+  final ValueChanged<int>? aoSelecionarAba;
 
   const EditarConta({
     super.key,
@@ -38,10 +27,9 @@ class EditarConta extends StatefulWidget {
     this.telefone = '',
     this.salvarAlteracoes,
     this.aoClicarAlterarSenha,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
+    this.aoClicarPerfil,
+    this.aoClicarSair,
+    this.aoSelecionarAba,
   });
 
   @override
@@ -165,7 +153,7 @@ class _EditarContaState extends State<EditarConta> {
                 const Text(
                   'Minha Conta',
                   style: TextStyle(
-                    color: _CoresApp.textoPrimario,
+                    color: CoresApp.textoPrimario,
                     fontSize: 20,
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w700,
@@ -232,13 +220,13 @@ class _EditarContaState extends State<EditarConta> {
               onPressed: widget.aoClicarAlterarSenha,
               icon: const Icon(
                 Icons.lock_outline_rounded,
-                color: _CoresApp.textoSecundario,
+                color: CoresApp.textoSecundario,
                 size: 20,
               ),
               label: const Text(
                 'Alterar senha',
                 style: TextStyle(
-                  color: _CoresApp.cianoPrimario,
+                  color: CoresApp.cianoPrimario,
                   fontSize: 16,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
@@ -246,7 +234,7 @@ class _EditarContaState extends State<EditarConta> {
               ),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(
-                  color: _CoresApp.borda,
+                  color: CoresApp.borda,
                   width: 1,
                 ),
                 shape: RoundedRectangleBorder(
@@ -262,8 +250,8 @@ class _EditarContaState extends State<EditarConta> {
             child: ElevatedButton(
               onPressed: _processarSalvar,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _CoresApp.cianoPrimario,
-                foregroundColor: _CoresApp.fundo,
+                backgroundColor: CoresApp.cianoPrimario,
+                foregroundColor: CoresApp.fundo,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -286,9 +274,9 @@ class _EditarContaState extends State<EditarConta> {
             child: OutlinedButton(
               onPressed: () => Navigator.pop(context),
               style: OutlinedButton.styleFrom(
-                foregroundColor: _CoresApp.textoPrimario,
+                foregroundColor: CoresApp.textoPrimario,
                 side: const BorderSide(
-                  color: _CoresApp.borda,
+                  color: CoresApp.borda,
                   width: 1,
                 ),
                 shape: RoundedRectangleBorder(
@@ -325,22 +313,22 @@ class _EditarContaState extends State<EditarConta> {
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle.light.copyWith(
             statusBarColor: Colors.transparent,
-            systemNavigationBarColor: _CoresApp.superficie,
+            systemNavigationBarColor: CoresApp.superficie,
           ),
           child: Scaffold(
-            backgroundColor: _CoresApp.fundo,
+            backgroundColor: CoresApp.fundo,
             body: SafeArea(
               bottom: telaGrande,
               child: telaGrande
                   ? Column(
                       children: [
-                        _CabecalhoDesktop(
-                          iniciais: iniciais,
-                          aoClicarInicio: widget.aoClicarInicio ??
-                              () => Navigator.pop(context),
-                          aoClicarMercado: widget.aoClicarMercado,
-                          aoClicarPix: widget.aoClicarPix,
-                          aoClicarHistorico: widget.aoClicarHistorico,
+                        CabecalhoDesktopWrapper(
+                          iniciaisUsuario: iniciais,
+                          indiceAtivo: -1,
+                          etiquetaTela: 'Minha Conta',
+                          aoSelecionarAba: widget.aoSelecionarAba,
+                          aoClicarPerfil: widget.aoClicarPerfil,
+                          aoClicarSair: widget.aoClicarSair,
                         ),
                         Expanded(
                           child: SingleChildScrollView(
@@ -356,10 +344,10 @@ class _EditarContaState extends State<EditarConta> {
                                 child: Container(
                                   padding: const EdgeInsets.all(28),
                                   decoration: BoxDecoration(
-                                    color: _CoresApp.superficie,
+                                    color: CoresApp.superficie,
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: _CoresApp.borda,
+                                      color: CoresApp.borda,
                                       width: 1,
                                     ),
                                   ),
@@ -378,9 +366,13 @@ class _EditarContaState extends State<EditarConta> {
                         constraints: const BoxConstraints(maxWidth: 480),
                         child: Column(
                           children: [
-                            _BarraSuperiorMobile(
+                            CabecalhoMobileWrapper(
                               titulo: 'Minha Conta',
+                              iniciaisUsuario: iniciais,
+                              mostrarBotaoVoltar: true,
                               aoVoltar: () => Navigator.pop(context),
+                              aoClicarPerfil: widget.aoClicarPerfil,
+                              aoClicarSair: widget.aoClicarSair,
                             ),
                             Expanded(
                               child: SingleChildScrollView(
@@ -403,13 +395,9 @@ class _EditarContaState extends State<EditarConta> {
             ),
             bottomNavigationBar: telaGrande
                 ? null
-                : _BarraNavegacaoInferior(
-                    indiceAtivo: 0,
-                    aoClicarInicio:
-                        widget.aoClicarInicio ?? () => Navigator.pop(context),
-                    aoClicarMercado: widget.aoClicarMercado,
-                    aoClicarPix: widget.aoClicarPix,
-                    aoClicarHistorico: widget.aoClicarHistorico,
+                : MenuInferiorWrapper(
+                    indiceAtivo: -1,
+                    aoSelecionarAba: widget.aoSelecionarAba,
                   ),
           ),
         );
@@ -432,230 +420,13 @@ class _BotaoVoltarCircular extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: const BoxDecoration(
-          color: _CoresApp.superficieAvatar,
+          color: CoresApp.superficieAvatar,
           shape: BoxShape.circle,
         ),
         child: const Icon(
           Icons.arrow_back_rounded,
-          color: _CoresApp.textoPrimario,
+          color: CoresApp.textoPrimario,
           size: 18,
-        ),
-      ),
-    );
-  }
-}
-
-class _BarraSuperiorMobile extends StatelessWidget {
-  final String titulo;
-  final VoidCallback aoVoltar;
-
-  const _BarraSuperiorMobile({
-    required this.titulo,
-    required this.aoVoltar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        children: [
-          _BotaoVoltarCircular(aoVoltar: aoVoltar),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              titulo,
-              style: const TextStyle(
-                color: _CoresApp.textoPrimario,
-                fontSize: 18,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CabecalhoDesktop extends StatelessWidget {
-  final String iniciais;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
-
-  const _CabecalhoDesktop({
-    required this.iniciais,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _CoresApp.superficie,
-        border: Border(
-          bottom: BorderSide(
-            color: _CoresApp.borda,
-            width: 1,
-          ),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1120),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: _CoresApp.cianoSuave,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: _CoresApp.cianoPrimario,
-                    width: 1.5,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.storage_rounded,
-                  color: _CoresApp.cianoPrimario,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'BlockPay',
-                style: TextStyle(
-                  color: _CoresApp.textoPrimario,
-                  fontSize: 18,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _CoresApp.cianoSuave,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'Minha Conta',
-                  style: TextStyle(
-                    color: _CoresApp.cianoPrimario,
-                    fontSize: 11,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              _ItemMenuSuperior(
-                icone: Icons.account_balance_wallet_outlined,
-                rotulo: 'Início',
-                ativo: true,
-                aoClicar: aoClicarInicio,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.show_chart_rounded,
-                rotulo: 'Mercado',
-                ativo: false,
-                aoClicar: aoClicarMercado,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.pix_outlined,
-                rotulo: 'Pix',
-                ativo: false,
-                aoClicar: aoClicarPix,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.history_rounded,
-                rotulo: 'Histórico',
-                ativo: false,
-                aoClicar: aoClicarHistorico,
-              ),
-              const SizedBox(width: 20),
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: _CoresApp.superficieAvatar,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _CoresApp.cianoPrimario,
-                    width: 1.5,
-                  ),
-                ),
-                child: Text(
-                  iniciais,
-                  style: const TextStyle(
-                    color: _CoresApp.cianoPrimario,
-                    fontSize: 12,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ItemMenuSuperior extends StatelessWidget {
-  final IconData icone;
-  final String rotulo;
-  final bool ativo;
-  final VoidCallback? aoClicar;
-
-  const _ItemMenuSuperior({
-    required this.icone,
-    required this.rotulo,
-    required this.ativo,
-    this.aoClicar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cor = ativo ? _CoresApp.cianoPrimario : _CoresApp.textoSecundario;
-
-    return InkWell(
-      onTap: aoClicar,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: ativo ? _CoresApp.cianoSuave : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icone, color: cor, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              rotulo,
-              style: TextStyle(
-                color: cor,
-                fontSize: 13,
-                fontFamily: 'Inter',
-                fontWeight: ativo ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -680,13 +451,13 @@ class _CabecalhoPerfil extends StatelessWidget {
           height: 80,
           alignment: Alignment.center,
           decoration: const BoxDecoration(
-            color: _CoresApp.superficieAvatar,
+            color: CoresApp.superficieAvatar,
             shape: BoxShape.circle,
           ),
           child: Text(
             iniciais,
             style: const TextStyle(
-              color: _CoresApp.cianoPrimario,
+              color: CoresApp.cianoPrimario,
               fontSize: 28,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
@@ -698,7 +469,7 @@ class _CabecalhoPerfil extends StatelessWidget {
           nomeCompleto,
           textAlign: TextAlign.center,
           style: const TextStyle(
-            color: _CoresApp.textoPrimario,
+            color: CoresApp.textoPrimario,
             fontSize: 20,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w700,
@@ -746,7 +517,7 @@ class _CampoPerfil extends StatelessWidget {
         Text(
           rotulo,
           style: const TextStyle(
-            color: _CoresApp.textoSecundario,
+            color: CoresApp.textoSecundario,
             fontSize: 13,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w600,
@@ -766,72 +537,72 @@ class _CampoPerfil extends StatelessWidget {
             onChanged: aoAlterar,
             onFieldSubmitted: concluirDigitacao,
             style: const TextStyle(
-              color: _CoresApp.textoPrimario,
+              color: CoresApp.textoPrimario,
               fontSize: 14,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w400,
             ),
-            cursorColor: _CoresApp.cianoPrimario,
+            cursorColor: CoresApp.cianoPrimario,
             decoration: InputDecoration(
               hintText: dica,
               hintStyle: const TextStyle(
-                color: _CoresApp.textoSecundario,
+                color: CoresApp.textoSecundario,
                 fontSize: 14,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w400,
               ),
               filled: true,
               fillColor: somenteLeitura
-                  ? _CoresApp.superficieDesabilitada
-                  : _CoresApp.superficie,
+                  ? const Color(0xFF1A2230)
+                  : CoresApp.superficie,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14,
                 vertical: 15,
               ),
               prefixIcon: Icon(
                 icone,
-                color: _CoresApp.textoSecundario,
+                color: CoresApp.textoSecundario,
                 size: 20,
               ),
               suffixIcon: somenteLeitura
                   ? const Icon(
                       Icons.lock_outline_rounded,
-                      color: _CoresApp.textoSecundario,
+                      color: CoresApp.textoSecundario,
                       size: 18,
                     )
                   : null,
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.borda,
+                  color: CoresApp.borda,
                   width: 1,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.borda,
+                  color: CoresApp.borda,
                   width: 1,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.cianoPrimario,
+                  color: CoresApp.cianoPrimario,
                   width: 1.5,
                 ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.vermelhoErro,
+                  color: CoresApp.vermelhoNegativo,
                   width: 1,
                 ),
               ),
               focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.vermelhoErro,
+                  color: CoresApp.vermelhoNegativo,
                   width: 1.5,
                 ),
               ),
@@ -843,7 +614,7 @@ class _CampoPerfil extends StatelessWidget {
           Text(
             textoAjuda!,
             style: const TextStyle(
-              color: _CoresApp.textoSecundario,
+              color: CoresApp.textoSecundario,
               fontSize: 11,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w400,
@@ -877,127 +648,6 @@ class _FormatadorTelefone extends TextInputFormatter {
     return TextEditingValue(
       text: formatado,
       selection: TextSelection.collapsed(offset: formatado.length),
-    );
-  }
-}
-
-class _BarraNavegacaoInferior extends StatelessWidget {
-  final int indiceAtivo;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
-
-  const _BarraNavegacaoInferior({
-    required this.indiceAtivo,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _CoresApp.superficie,
-        border: Border(
-          top: BorderSide(
-            color: _CoresApp.borda,
-            width: 1,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Center(
-          heightFactor: 1,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _ItemMenuRodape(
-                    icone: Icons.account_balance_wallet_outlined,
-                    rotulo: 'Início',
-                    ativo: indiceAtivo == 0,
-                    aoClicar: aoClicarInicio,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.show_chart_rounded,
-                    rotulo: 'Mercado',
-                    ativo: indiceAtivo == 1,
-                    aoClicar: aoClicarMercado,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.pix_outlined,
-                    rotulo: 'Pix',
-                    ativo: indiceAtivo == 2,
-                    aoClicar: aoClicarPix,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.history_rounded,
-                    rotulo: 'Histórico',
-                    ativo: indiceAtivo == 3,
-                    aoClicar: aoClicarHistorico,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ItemMenuRodape extends StatelessWidget {
-  final IconData icone;
-  final String rotulo;
-  final bool ativo;
-  final VoidCallback? aoClicar;
-
-  const _ItemMenuRodape({
-    required this.icone,
-    required this.rotulo,
-    required this.ativo,
-    this.aoClicar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cor = ativo ? _CoresApp.cianoPrimario : _CoresApp.textoSecundario;
-
-    return Expanded(
-      child: InkWell(
-        onTap: aoClicar,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icone,
-                color: cor,
-                size: 22,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                rotulo,
-                style: TextStyle(
-                  color: cor,
-                  fontSize: 11,
-                  fontFamily: 'Inter',
-                  fontWeight: ativo ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

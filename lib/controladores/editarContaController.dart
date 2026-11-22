@@ -49,10 +49,9 @@ class EditarContaController extends BaseController {
           Navigator.pop(context);
         }
       },
-      aoClicarInicio: () => Navigator.pop(context),
-      aoClicarMercado: () => avisarTelaEmBreve(context, 'Mercado'),
-      aoClicarPix: () => avisarTelaEmBreve(context, 'Pix'),
-      aoClicarHistorico: () => avisarTelaEmBreve(context, 'Histórico'),
+      aoClicarPerfil: () => abrirPerfil(context, args),
+      aoClicarSair: () => sairDaConta(context),
+      aoSelecionarAba: (indice) => navegarPeloMenu(context, args, indice),
     );
   }
 }

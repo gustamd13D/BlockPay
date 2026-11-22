@@ -231,23 +231,10 @@ class TransferirCriptoController extends BaseController {
             }
             return null;
           },
-          aoClicarPerfil: () {
-            Navigator.pushNamed(
-              context,
-              RotasApp.editarConta,
-              arguments: clienteAtual,
-            );
-          },
-          aoClicarInicio: () => Navigator.pop(context),
-          aoClicarMercado: () {
-            Navigator.pushNamed(
-              context,
-              RotasApp.mercadoCripto,
-              arguments: clienteAtual,
-            );
-          },
-          aoClicarPix: () => avisarTelaEmBreve(context, 'Pix'),
-          aoClicarHistorico: () => avisarTelaEmBreve(context, 'Histórico'),
+          aoClicarPerfil: () => abrirPerfil(context, clienteAtual),
+          aoClicarSair: () => sairDaConta(context),
+          aoSelecionarAba: (indice) =>
+              navegarPeloMenu(context, clienteAtual, indice),
         );
       },
     );

@@ -1,22 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-/// Paleta de cores centralizada do sistema de design BlockPay
-abstract class _CoresApp {
-  static const Color fundo = Color(0xFF0B0E17);
-  static const Color superficie = Color(0xFF151A26);
-  static const Color superficieAvatar = Color(0xFF21293A);
-  static const Color borda = Color(0xFF2A354A);
-  static const Color cianoPrimario = Color(0xFF00E5FF);
-  static const Color cianoSuave = Color(0x1500E5FF);
-  static const Color verdePositivo = Color(0xFF00E676);
-  static const Color verdeSuave = Color(0x2000E676);
-  static const Color amareloProcessando = Color(0xFFFFD600);
-  static const Color amareloSuave = Color(0x20FFD600);
-  static const Color textoPrimario = Colors.white;
-  static const Color textoSecundario = Color(0xFF90A4AE);
-}
+import '../componentes/cabecalhoDesktopWrapper.dart';
+import '../componentes/cabecalhoMobileWrapper.dart';
+import '../componentes/coresApp.dart';
+import '../componentes/menuInferiorWrapper.dart';
 
 class StatusBlockchain extends StatefulWidget {
   final String iniciaisUsuario;
@@ -30,10 +18,8 @@ class StatusBlockchain extends StatefulWidget {
 
   /// Callbacks de navegacao
   final VoidCallback? aoClicarPerfil;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
+  final VoidCallback? aoClicarSair;
+  final ValueChanged<int>? aoSelecionarAba;
 
   const StatusBlockchain({
     super.key,
@@ -44,10 +30,8 @@ class StatusBlockchain extends StatefulWidget {
     this.destinatario,
     this.animarConfirmacao = false,
     this.aoClicarPerfil,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
+    this.aoClicarSair,
+    this.aoSelecionarAba,
   });
 
   @override
@@ -117,7 +101,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
       const SnackBar(
         content:
             Text('Hash da transação copiada para a área de transferência!'),
-        backgroundColor: _CoresApp.superficie,
+        backgroundColor: CoresApp.superficie,
         duration: Duration(seconds: 2),
       ),
     );
@@ -137,7 +121,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
               const Text(
                 'Status da blockchain',
                 style: TextStyle(
-                  color: _CoresApp.textoPrimario,
+                  color: CoresApp.textoPrimario,
                   fontSize: 20,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
@@ -150,10 +134,10 @@ class _StatusBlockchainState extends State<StatusBlockchain>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _CoresApp.superficie,
+            color: CoresApp.superficie,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: _CoresApp.borda,
+              color: CoresApp.borda,
               width: 1,
             ),
           ),
@@ -165,7 +149,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                 curve: Curves.easeOutBack,
                 child: const Icon(
                   Icons.storage_rounded,
-                  color: _CoresApp.cianoPrimario,
+                  color: CoresApp.cianoPrimario,
                   size: 48,
                 ),
               ),
@@ -174,7 +158,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                 _confirmado ? 'Status da transação' : 'Validando na rede...',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: _CoresApp.textoPrimario,
+                  color: CoresApp.textoPrimario,
                   fontSize: 18,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
@@ -187,7 +171,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                     : 'Realize uma transferência para gerar uma hash',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: _CoresApp.textoSecundario,
+                  color: CoresApp.textoSecundario,
                   fontSize: 13,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w400,
@@ -203,13 +187,13 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: _CoresApp.cianoSuave,
+                    color: CoresApp.cianoSuave,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     'Envio de ${_formatarQuantidade(widget.quantidade!)} ${widget.ativo}',
                     style: const TextStyle(
-                      color: _CoresApp.cianoPrimario,
+                      color: CoresApp.cianoPrimario,
                       fontSize: 12,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w600,
@@ -226,20 +210,20 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                     height: 30,
                     alignment: Alignment.center,
                     decoration: const BoxDecoration(
-                      color: _CoresApp.amareloSuave,
+                      color: CoresApp.amareloSuave,
                       shape: BoxShape.circle,
                     ),
                     child: _confirmado
                         ? const Icon(
                             Icons.sync_rounded,
-                            color: _CoresApp.amareloProcessando,
+                            color: CoresApp.amareloBitcoin,
                             size: 16,
                           )
                         : RotationTransition(
                             turns: _controladorRotacao,
                             child: const Icon(
                               Icons.sync_rounded,
-                              color: _CoresApp.amareloProcessando,
+                              color: CoresApp.amareloBitcoin,
                               size: 16,
                             ),
                           ),
@@ -249,12 +233,10 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _confirmado
-                              ? 'Processando bloco...'
-                              : 'Processando bloco...',
-                          style: const TextStyle(
-                            color: _CoresApp.textoPrimario,
+                        const Text(
+                          'Processando bloco...',
+                          style: TextStyle(
+                            color: CoresApp.textoPrimario,
                             fontSize: 14,
                             fontFamily: 'Inter',
                             fontWeight: FontWeight.w700,
@@ -266,7 +248,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                               ? 'Bloco validado pelos nós da rede'
                               : 'Aguardando confirmação dos nós',
                           style: const TextStyle(
-                            color: _CoresApp.textoSecundario,
+                            color: CoresApp.textoSecundario,
                             fontSize: 12,
                             fontFamily: 'Inter',
                             fontWeight: FontWeight.w400,
@@ -293,12 +275,12 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                         height: 30,
                         alignment: Alignment.center,
                         decoration: const BoxDecoration(
-                          color: _CoresApp.verdeSuave,
+                          color: CoresApp.verdeSuave,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.check_circle_outline_rounded,
-                          color: _CoresApp.verdePositivo,
+                          color: CoresApp.verdePositivo,
                           size: 17,
                         ),
                       ),
@@ -311,7 +293,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                           const Text(
                             'Confirmado na blockchain',
                             style: TextStyle(
-                              color: _CoresApp.textoPrimario,
+                              color: CoresApp.textoPrimario,
                               fontSize: 14,
                               fontFamily: 'Inter',
                               fontWeight: FontWeight.w700,
@@ -323,7 +305,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                                 ? 'O ativo foi adicionado à carteira do destinatário'
                                 : 'Aguardando conclusão da etapa anterior',
                             style: const TextStyle(
-                              color: _CoresApp.textoSecundario,
+                              color: CoresApp.textoSecundario,
                               fontSize: 12,
                               fontFamily: 'Inter',
                               fontWeight: FontWeight.w400,
@@ -344,10 +326,10 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: _CoresApp.superficieAvatar,
+                    color: CoresApp.superficieAvatar,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _CoresApp.borda,
+                      color: CoresApp.borda,
                       width: 1,
                     ),
                   ),
@@ -357,7 +339,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                       const Text(
                         'HASH DA TRANSAÇÃO',
                         style: TextStyle(
-                          color: _CoresApp.textoSecundario,
+                          color: CoresApp.textoSecundario,
                           fontSize: 11,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w600,
@@ -373,8 +355,8 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                               _hashResumida,
                               style: TextStyle(
                                 color: _possuiTransacao
-                                    ? _CoresApp.cianoPrimario
-                                    : _CoresApp.textoSecundario,
+                                    ? CoresApp.cianoPrimario
+                                    : CoresApp.textoSecundario,
                                 fontSize: 13,
                                 fontFamily: 'Inter',
                                 fontWeight: FontWeight.w700,
@@ -384,7 +366,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                           if (_possuiTransacao)
                             const Icon(
                               Icons.copy_rounded,
-                              color: _CoresApp.cianoPrimario,
+                              color: CoresApp.cianoPrimario,
                               size: 16,
                             ),
                         ],
@@ -401,7 +383,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _CoresApp.superficieAvatar,
+            color: CoresApp.superficieAvatar,
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Column(
@@ -410,7 +392,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
               Text(
                 'O que é uma Hash?',
                 style: TextStyle(
-                  color: _CoresApp.textoPrimario,
+                  color: CoresApp.textoPrimario,
                   fontSize: 13,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
@@ -420,7 +402,7 @@ class _StatusBlockchainState extends State<StatusBlockchain>
               Text(
                 'A hash funciona como um recibo digital único e imutável que comprova que a transação ocorreu em uma blockchain. Legal, né?',
                 style: TextStyle(
-                  color: _CoresApp.textoSecundario,
+                  color: CoresApp.textoSecundario,
                   fontSize: 12,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w400,
@@ -443,23 +425,22 @@ class _StatusBlockchainState extends State<StatusBlockchain>
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle.light.copyWith(
             statusBarColor: Colors.transparent,
-            systemNavigationBarColor: _CoresApp.superficie,
+            systemNavigationBarColor: CoresApp.superficie,
           ),
           child: Scaffold(
-            backgroundColor: _CoresApp.fundo,
+            backgroundColor: CoresApp.fundo,
             body: SafeArea(
               bottom: telaGrande,
               child: telaGrande
                   ? Column(
                       children: [
-                        _CabecalhoDesktop(
-                          iniciais: widget.iniciaisUsuario,
+                        CabecalhoDesktopWrapper(
+                          iniciaisUsuario: widget.iniciaisUsuario,
+                          indiceAtivo: 0,
+                          etiquetaTela: 'Blockchain',
+                          aoSelecionarAba: widget.aoSelecionarAba,
                           aoClicarPerfil: widget.aoClicarPerfil,
-                          aoClicarInicio: widget.aoClicarInicio ??
-                              () => Navigator.pop(context),
-                          aoClicarMercado: widget.aoClicarMercado,
-                          aoClicarPix: widget.aoClicarPix,
-                          aoClicarHistorico: widget.aoClicarHistorico,
+                          aoClicarSair: widget.aoClicarSair,
                         ),
                         Expanded(
                           child: SingleChildScrollView(
@@ -484,11 +465,13 @@ class _StatusBlockchainState extends State<StatusBlockchain>
                         constraints: const BoxConstraints(maxWidth: 480),
                         child: Column(
                           children: [
-                            _BarraSuperiorMobile(
+                            CabecalhoMobileWrapper(
                               titulo: 'Status da blockchain',
-                              iniciais: widget.iniciaisUsuario,
+                              iniciaisUsuario: widget.iniciaisUsuario,
+                              mostrarBotaoVoltar: true,
                               aoVoltar: () => Navigator.pop(context),
                               aoClicarPerfil: widget.aoClicarPerfil,
+                              aoClicarSair: widget.aoClicarSair,
                             ),
                             Expanded(
                               child: SingleChildScrollView(
@@ -509,13 +492,9 @@ class _StatusBlockchainState extends State<StatusBlockchain>
             ),
             bottomNavigationBar: telaGrande
                 ? null
-                : _BarraNavegacaoInferior(
+                : MenuInferiorWrapper(
                     indiceAtivo: 0,
-                    aoClicarInicio:
-                        widget.aoClicarInicio ?? () => Navigator.pop(context),
-                    aoClicarMercado: widget.aoClicarMercado,
-                    aoClicarPix: widget.aoClicarPix,
-                    aoClicarHistorico: widget.aoClicarHistorico,
+                    aoSelecionarAba: widget.aoSelecionarAba,
                   ),
           ),
         );
@@ -538,379 +517,13 @@ class _BotaoVoltarCircular extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: const BoxDecoration(
-          color: _CoresApp.superficieAvatar,
+          color: CoresApp.superficieAvatar,
           shape: BoxShape.circle,
         ),
         child: const Icon(
           Icons.arrow_back_rounded,
-          color: _CoresApp.textoPrimario,
+          color: CoresApp.textoPrimario,
           size: 18,
-        ),
-      ),
-    );
-  }
-}
-
-class _BarraSuperiorMobile extends StatelessWidget {
-  final String titulo;
-  final String iniciais;
-  final VoidCallback aoVoltar;
-  final VoidCallback? aoClicarPerfil;
-
-  const _BarraSuperiorMobile({
-    required this.titulo,
-    required this.iniciais,
-    required this.aoVoltar,
-    this.aoClicarPerfil,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        children: [
-          _BotaoVoltarCircular(aoVoltar: aoVoltar),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              titulo,
-              style: const TextStyle(
-                color: _CoresApp.textoPrimario,
-                fontSize: 18,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          InkWell(
-            onTap: aoClicarPerfil,
-            borderRadius: BorderRadius.circular(18),
-            child: Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: _CoresApp.superficieAvatar,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                iniciais.toUpperCase(),
-                style: const TextStyle(
-                  color: _CoresApp.cianoPrimario,
-                  fontSize: 12,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CabecalhoDesktop extends StatelessWidget {
-  final String iniciais;
-  final VoidCallback? aoClicarPerfil;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
-
-  const _CabecalhoDesktop({
-    required this.iniciais,
-    this.aoClicarPerfil,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _CoresApp.superficie,
-        border: Border(
-          bottom: BorderSide(
-            color: _CoresApp.borda,
-            width: 1,
-          ),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1120),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: _CoresApp.cianoSuave,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: _CoresApp.cianoPrimario,
-                    width: 1.5,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.storage_rounded,
-                  color: _CoresApp.cianoPrimario,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'BlockPay',
-                style: TextStyle(
-                  color: _CoresApp.textoPrimario,
-                  fontSize: 18,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _CoresApp.cianoSuave,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'Blockchain',
-                  style: TextStyle(
-                    color: _CoresApp.cianoPrimario,
-                    fontSize: 11,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              _ItemMenuSuperior(
-                icone: Icons.account_balance_wallet_outlined,
-                rotulo: 'Início',
-                ativo: true,
-                aoClicar: aoClicarInicio,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.show_chart_rounded,
-                rotulo: 'Mercado',
-                ativo: false,
-                aoClicar: aoClicarMercado,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.pix_outlined,
-                rotulo: 'Pix',
-                ativo: false,
-                aoClicar: aoClicarPix,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.history_rounded,
-                rotulo: 'Histórico',
-                ativo: false,
-                aoClicar: aoClicarHistorico,
-              ),
-              const SizedBox(width: 20),
-              InkWell(
-                onTap: aoClicarPerfil,
-                borderRadius: BorderRadius.circular(18),
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: _CoresApp.superficieAvatar,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    iniciais.toUpperCase(),
-                    style: const TextStyle(
-                      color: _CoresApp.cianoPrimario,
-                      fontSize: 12,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ItemMenuSuperior extends StatelessWidget {
-  final IconData icone;
-  final String rotulo;
-  final bool ativo;
-  final VoidCallback? aoClicar;
-
-  const _ItemMenuSuperior({
-    required this.icone,
-    required this.rotulo,
-    required this.ativo,
-    this.aoClicar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cor = ativo ? _CoresApp.cianoPrimario : _CoresApp.textoSecundario;
-
-    return InkWell(
-      onTap: aoClicar,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: ativo ? _CoresApp.cianoSuave : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icone, color: cor, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              rotulo,
-              style: TextStyle(
-                color: cor,
-                fontSize: 13,
-                fontFamily: 'Inter',
-                fontWeight: ativo ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BarraNavegacaoInferior extends StatelessWidget {
-  final int indiceAtivo;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
-
-  const _BarraNavegacaoInferior({
-    required this.indiceAtivo,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _CoresApp.superficie,
-        border: Border(
-          top: BorderSide(
-            color: _CoresApp.borda,
-            width: 1,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Center(
-          heightFactor: 1,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _ItemMenuRodape(
-                    icone: Icons.account_balance_wallet_outlined,
-                    rotulo: 'Início',
-                    ativo: indiceAtivo == 0,
-                    aoClicar: aoClicarInicio,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.show_chart_rounded,
-                    rotulo: 'Mercado',
-                    ativo: indiceAtivo == 1,
-                    aoClicar: aoClicarMercado,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.pix_outlined,
-                    rotulo: 'Pix',
-                    ativo: indiceAtivo == 2,
-                    aoClicar: aoClicarPix,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.history_rounded,
-                    rotulo: 'Histórico',
-                    ativo: indiceAtivo == 3,
-                    aoClicar: aoClicarHistorico,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ItemMenuRodape extends StatelessWidget {
-  final IconData icone;
-  final String rotulo;
-  final bool ativo;
-  final VoidCallback? aoClicar;
-
-  const _ItemMenuRodape({
-    required this.icone,
-    required this.rotulo,
-    required this.ativo,
-    this.aoClicar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cor = ativo ? _CoresApp.cianoPrimario : _CoresApp.textoSecundario;
-
-    return Expanded(
-      child: InkWell(
-        onTap: aoClicar,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icone,
-                color: cor,
-                size: 22,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                rotulo,
-                style: TextStyle(
-                  color: cor,
-                  fontSize: 11,
-                  fontFamily: 'Inter',
-                  fontWeight: ativo ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

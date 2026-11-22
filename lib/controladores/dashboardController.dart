@@ -60,21 +60,15 @@ class DashboardController extends BaseController {
           descricaoUltimaAtividade: descricaoAtividade,
           valorUltimaAtividadeFormatado: valorAtividade,
           atividadePositiva: atividadePositiva,
-          aoClicarPerfil: () {
+          aoClicarPerfil: () => abrirPerfil(context, clienteAtual),
+          aoClicarSair: () => sairDaConta(context),
+          aoClicarVerTodas: () {
             Navigator.pushNamed(
               context,
-              RotasApp.editarConta,
+              RotasApp.historico,
               arguments: clienteAtual,
             );
           },
-          aoClicarSair: () {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              RotasApp.login,
-              (_) => false,
-            );
-          },
-          aoClicarVerTodas: () => avisarTelaEmBreve(context, 'Histórico'),
           aoClicarTransferir: () {
             Navigator.pushNamed(
               context,
@@ -92,16 +86,8 @@ class DashboardController extends BaseController {
               },
             );
           },
-          aoClicarInicio: () {},
-          aoClicarMercado: () {
-            Navigator.pushNamed(
-              context,
-              RotasApp.mercadoCripto,
-              arguments: clienteAtual,
-            );
-          },
-          aoClicarPix: () => avisarTelaEmBreve(context, 'Pix'),
-          aoClicarHistorico: () => avisarTelaEmBreve(context, 'Histórico'),
+          aoSelecionarAba: (indice) =>
+              navegarPeloMenu(context, clienteAtual, indice),
         );
       },
     );

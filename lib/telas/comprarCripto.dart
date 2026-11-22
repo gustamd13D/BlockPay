@@ -1,20 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../componentes/cabecalhoDesktopWrapper.dart';
+import '../componentes/cabecalhoMobileWrapper.dart';
+import '../componentes/coresApp.dart';
+import '../componentes/menuInferiorWrapper.dart';
 import 'mercadoCripto.dart';
-
-abstract class _CoresApp {
-  static const Color fundo = Color(0xFF0B0E17);
-  static const Color superficie = Color(0xFF151A26);
-  static const Color superficieDestaque = Color(0xFF21293A);
-  static const Color borda = Color(0xFF2A354A);
-  static const Color cianoPrimario = Color(0xFF00E5FF);
-  static const Color cianoSuave = Color(0x1500E5FF);
-  static const Color verdePositivo = Color(0xFF00E676);
-  static const Color vermelhoNegativo = Color(0xFFFF5252);
-  static const Color textoPrimario = Colors.white;
-  static const Color textoSecundario = Color(0xFF90A4AE);
-  static const Color textoApagado = Color(0xFF546E7A);
-}
 
 class ComprarCripto extends StatefulWidget {
   final String iniciaisUsuario;
@@ -25,10 +15,7 @@ class ComprarCripto extends StatefulWidget {
   final VoidCallback? aoVoltar;
   final VoidCallback? aoClicarPerfil;
   final VoidCallback? aoClicarSair;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
+  final ValueChanged<int>? aoSelecionarAba;
 
   const ComprarCripto({
     super.key,
@@ -39,10 +26,7 @@ class ComprarCripto extends StatefulWidget {
     this.aoVoltar,
     this.aoClicarPerfil,
     this.aoClicarSair,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
+    this.aoSelecionarAba,
   });
 
   @override
@@ -169,10 +153,10 @@ class _ComprarCriptoState extends State<ComprarCripto> {
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle.light.copyWith(
             statusBarColor: Colors.transparent,
-            systemNavigationBarColor: _CoresApp.superficie,
+            systemNavigationBarColor: CoresApp.superficie,
           ),
           child: Scaffold(
-            backgroundColor: _CoresApp.fundo,
+            backgroundColor: CoresApp.fundo,
             body: SafeArea(
               bottom: telaGrande,
               child: telaGrande
@@ -181,12 +165,9 @@ class _ComprarCriptoState extends State<ComprarCripto> {
             ),
             bottomNavigationBar: telaGrande
                 ? null
-                : _BarraNavegacaoInferior(
+                : MenuInferiorWrapper(
                     indiceAtivo: 1,
-                    aoClicarInicio: widget.aoClicarInicio,
-                    aoClicarMercado: widget.aoClicarMercado,
-                    aoClicarPix: widget.aoClicarPix,
-                    aoClicarHistorico: widget.aoClicarHistorico,
+                    aoSelecionarAba: widget.aoSelecionarAba,
                   ),
           ),
         );
@@ -205,7 +186,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
-            color: _CoresApp.superficieDestaque,
+            color: CoresApp.superficieAvatar,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -214,7 +195,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
               const Text(
                 'Saldo BRL Disponível:',
                 style: TextStyle(
-                  color: _CoresApp.textoSecundario,
+                  color: CoresApp.textoSecundario,
                   fontSize: 13,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w400,
@@ -223,7 +204,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
               Text(
                 _formatarMoeda(widget.saldoBrlDisponivel),
                 style: const TextStyle(
-                  color: _CoresApp.verdePositivo,
+                  color: CoresApp.verdePositivo,
                   fontSize: 14,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
@@ -238,7 +219,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
         const Text(
           'Quanto deseja comprar em Reais?',
           style: TextStyle(
-            color: _CoresApp.textoSecundario,
+            color: CoresApp.textoSecundario,
             fontSize: 13,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w600,
@@ -248,12 +229,12 @@ class _ComprarCriptoState extends State<ComprarCripto> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
-            color: _CoresApp.superficie,
+            color: CoresApp.superficie,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: temErro
-                  ? _CoresApp.vermelhoNegativo
-                  : _CoresApp.cianoPrimario,
+                  ? CoresApp.vermelhoNegativo
+                  : CoresApp.cianoPrimario,
               width: 1.5,
             ),
           ),
@@ -262,7 +243,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
               const Text(
                 'R\$',
                 style: TextStyle(
-                  color: _CoresApp.textoPrimario,
+                  color: CoresApp.textoPrimario,
                   fontSize: 18,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
@@ -281,7 +262,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
                   ],
                   onChanged: (_) => _validarEntrada(),
                   style: const TextStyle(
-                    color: _CoresApp.textoPrimario,
+                    color: CoresApp.textoPrimario,
                     fontSize: 18,
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w700,
@@ -290,7 +271,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
                     border: InputBorder.none,
                     hintText: '0,00',
                     hintStyle: TextStyle(
-                      color: _CoresApp.textoApagado,
+                      color: CoresApp.textoTerciario,
                       fontSize: 18,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w700,
@@ -308,7 +289,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
           Text(
             _mensagemErro!,
             style: const TextStyle(
-              color: _CoresApp.vermelhoNegativo,
+              color: CoresApp.vermelhoNegativo,
               fontSize: 12,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w500,
@@ -324,7 +305,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
             const Text(
               'Cotação atual:',
               style: TextStyle(
-                color: _CoresApp.textoSecundario,
+                color: CoresApp.textoSecundario,
                 fontSize: 13,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w400,
@@ -333,7 +314,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
             Text(
               '1 ${widget.ativo.sigla} = ${_formatarMoeda(widget.ativo.precoBrl)}',
               style: const TextStyle(
-                color: _CoresApp.textoPrimario,
+                color: CoresApp.textoPrimario,
                 fontSize: 13,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
@@ -347,10 +328,10 @@ class _ComprarCriptoState extends State<ComprarCripto> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _CoresApp.superficie,
+            color: CoresApp.superficie,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: _CoresApp.borda,
+              color: CoresApp.borda,
               width: 1,
             ),
           ),
@@ -360,7 +341,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
               const Text(
                 'FRAÇÃO CALCULADA ESTIMADA',
                 style: TextStyle(
-                  color: _CoresApp.cianoPrimario,
+                  color: CoresApp.cianoPrimario,
                   fontSize: 12,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
@@ -380,7 +361,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
                       child: Text(
                         _formatarFracao(_fracaoEstimada),
                         style: const TextStyle(
-                          color: _CoresApp.textoPrimario,
+                          color: CoresApp.textoPrimario,
                           fontSize: 28,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w800,
@@ -392,7 +373,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
                   Text(
                     widget.ativo.sigla,
                     style: const TextStyle(
-                      color: _CoresApp.cianoPrimario,
+                      color: CoresApp.cianoPrimario,
                       fontSize: 16,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w700,
@@ -405,7 +386,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
                 child: Divider(
                   height: 1,
                   thickness: 1,
-                  color: _CoresApp.borda,
+                  color: CoresApp.borda,
                 ),
               ),
               const Row(
@@ -414,7 +395,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
                   Text(
                     'Taxa de rede',
                     style: TextStyle(
-                      color: _CoresApp.textoSecundario,
+                      color: CoresApp.textoSecundario,
                       fontSize: 12,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w400,
@@ -423,7 +404,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
                   Text(
                     'R\$ 0,00',
                     style: TextStyle(
-                      color: _CoresApp.verdePositivo,
+                      color: CoresApp.verdePositivo,
                       fontSize: 12,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w600,
@@ -442,11 +423,11 @@ class _ComprarCriptoState extends State<ComprarCripto> {
           child: ElevatedButton(
             onPressed: podeConfirmar ? _submeterCompra : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _CoresApp.cianoPrimario,
+              backgroundColor: CoresApp.cianoPrimario,
               disabledBackgroundColor:
-                  _CoresApp.cianoPrimario.withValues(alpha: 0.35),
-              foregroundColor: _CoresApp.fundo,
-              disabledForegroundColor: _CoresApp.fundo.withValues(alpha: 0.7),
+                  CoresApp.cianoPrimario.withValues(alpha: 0.35),
+              foregroundColor: CoresApp.fundo,
+              disabledForegroundColor: CoresApp.fundo.withValues(alpha: 0.7),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -458,7 +439,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.4,
-                      color: _CoresApp.fundo,
+                      color: CoresApp.fundo,
                     ),
                   )
                 : const Row(
@@ -483,7 +464,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
           'Revise os dados da operação antes de confirmar.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: _CoresApp.textoApagado,
+            color: CoresApp.textoTerciario,
             fontSize: 11,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w400,
@@ -499,9 +480,10 @@ class _ComprarCriptoState extends State<ComprarCripto> {
         constraints: const BoxConstraints(maxWidth: 480),
         child: Column(
           children: [
-            _CabecalhoMobile(
+            CabecalhoMobileWrapper(
               titulo: 'Comprar ${widget.ativo.nome}',
-              iniciais: widget.iniciaisUsuario,
+              iniciaisUsuario: widget.iniciaisUsuario,
+              mostrarBotaoVoltar: true,
               aoVoltar: widget.aoVoltar,
               aoClicarPerfil: widget.aoClicarPerfil,
               aoClicarSair: widget.aoClicarSair,
@@ -522,15 +504,13 @@ class _ComprarCriptoState extends State<ComprarCripto> {
   Widget _construirLayoutDesktop() {
     return Column(
       children: [
-        _CabecalhoDesktop(
-          iniciais: widget.iniciaisUsuario,
+        CabecalhoDesktopWrapper(
+          iniciaisUsuario: widget.iniciaisUsuario,
           indiceAtivo: 1,
+          etiquetaTela: 'Comprar Cripto',
+          aoSelecionarAba: widget.aoSelecionarAba,
           aoClicarPerfil: widget.aoClicarPerfil,
           aoClicarSair: widget.aoClicarSair,
-          aoClicarInicio: widget.aoClicarInicio,
-          aoClicarMercado: widget.aoClicarMercado,
-          aoClicarPix: widget.aoClicarPix,
-          aoClicarHistorico: widget.aoClicarHistorico,
         ),
         Expanded(
           child: SingleChildScrollView(
@@ -549,7 +529,7 @@ class _ComprarCriptoState extends State<ComprarCripto> {
                         Text(
                           'Comprar ${widget.ativo.nome}',
                           style: const TextStyle(
-                            color: _CoresApp.textoPrimario,
+                            color: CoresApp.textoPrimario,
                             fontSize: 22,
                             fontFamily: 'Inter',
                             fontWeight: FontWeight.w700,
@@ -585,424 +565,13 @@ class _BotaoVoltar extends StatelessWidget {
         height: 34,
         alignment: Alignment.center,
         decoration: const BoxDecoration(
-          color: _CoresApp.superficie,
+          color: CoresApp.superficie,
           shape: BoxShape.circle,
         ),
         child: const Icon(
           Icons.arrow_back_rounded,
-          color: _CoresApp.textoPrimario,
+          color: CoresApp.textoPrimario,
           size: 18,
-        ),
-      ),
-    );
-  }
-}
-
-class _CabecalhoMobile extends StatelessWidget {
-  final String titulo;
-  final String iniciais;
-  final VoidCallback? aoVoltar;
-  final VoidCallback? aoClicarPerfil;
-  final VoidCallback? aoClicarSair;
-
-  const _CabecalhoMobile({
-    required this.titulo,
-    required this.iniciais,
-    this.aoVoltar,
-    this.aoClicarPerfil,
-    this.aoClicarSair,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        children: [
-          _BotaoVoltar(aoClicar: aoVoltar),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              titulo,
-              style: const TextStyle(
-                color: _CoresApp.textoPrimario,
-                fontSize: 18,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          _AvatarUsuario(
-            iniciais: iniciais,
-            aoClicarPerfil: aoClicarPerfil,
-            aoClicarSair: aoClicarSair,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CabecalhoDesktop extends StatelessWidget {
-  final String iniciais;
-  final int indiceAtivo;
-  final VoidCallback? aoClicarPerfil;
-  final VoidCallback? aoClicarSair;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
-
-  const _CabecalhoDesktop({
-    required this.iniciais,
-    required this.indiceAtivo,
-    this.aoClicarPerfil,
-    this.aoClicarSair,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _CoresApp.superficie,
-        border: Border(
-          bottom: BorderSide(color: _CoresApp.borda, width: 1),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1120),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: _CoresApp.cianoSuave,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: _CoresApp.cianoPrimario,
-                    width: 1.5,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.storage_rounded,
-                  color: _CoresApp.cianoPrimario,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'BlockPay',
-                style: TextStyle(
-                  color: _CoresApp.textoPrimario,
-                  fontSize: 18,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const Spacer(),
-              _ItemMenuSuperior(
-                icone: Icons.account_balance_wallet_outlined,
-                rotulo: 'Início',
-                ativo: indiceAtivo == 0,
-                aoClicar: aoClicarInicio,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.show_chart_rounded,
-                rotulo: 'Mercado',
-                ativo: indiceAtivo == 1,
-                aoClicar: aoClicarMercado,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.pix_outlined,
-                rotulo: 'Pix',
-                ativo: indiceAtivo == 2,
-                aoClicar: aoClicarPix,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.history_rounded,
-                rotulo: 'Histórico',
-                ativo: indiceAtivo == 3,
-                aoClicar: aoClicarHistorico,
-              ),
-              const SizedBox(width: 20),
-              _AvatarUsuario(
-                iniciais: iniciais,
-                aoClicarPerfil: aoClicarPerfil,
-                aoClicarSair: aoClicarSair,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ItemMenuSuperior extends StatelessWidget {
-  final IconData icone;
-  final String rotulo;
-  final bool ativo;
-  final VoidCallback? aoClicar;
-
-  const _ItemMenuSuperior({
-    required this.icone,
-    required this.rotulo,
-    required this.ativo,
-    this.aoClicar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cor = ativo ? _CoresApp.cianoPrimario : _CoresApp.textoSecundario;
-
-    return InkWell(
-      onTap: aoClicar,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: ativo ? _CoresApp.cianoSuave : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icone, color: cor, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              rotulo,
-              style: TextStyle(
-                color: cor,
-                fontSize: 13,
-                fontFamily: 'Inter',
-                fontWeight: ativo ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AvatarUsuario extends StatelessWidget {
-  final String iniciais;
-  final VoidCallback? aoClicarPerfil;
-  final VoidCallback? aoClicarSair;
-
-  const _AvatarUsuario({
-    required this.iniciais,
-    this.aoClicarPerfil,
-    this.aoClicarSair,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      tooltip: 'Opções da conta',
-      offset: const Offset(0, 44),
-      color: _CoresApp.superficie,
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: _CoresApp.borda, width: 1),
-      ),
-      onSelected: (opcao) {
-        if (opcao == 'conta') {
-          aoClicarPerfil?.call();
-        } else if (opcao == 'sair') {
-          aoClicarSair?.call();
-        }
-      },
-      itemBuilder: (context) => const [
-        PopupMenuItem<String>(
-          value: 'conta',
-          height: 44,
-          child: Row(
-            children: [
-              Icon(
-                Icons.person_outline_rounded,
-                color: _CoresApp.cianoPrimario,
-                size: 18,
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Minha Conta',
-                style: TextStyle(
-                  color: _CoresApp.textoPrimario,
-                  fontSize: 13,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuDivider(height: 1),
-        PopupMenuItem<String>(
-          value: 'sair',
-          height: 44,
-          child: Row(
-            children: [
-              Icon(
-                Icons.logout_rounded,
-                color: _CoresApp.vermelhoNegativo,
-                size: 18,
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Sair',
-                style: TextStyle(
-                  color: _CoresApp.vermelhoNegativo,
-                  fontSize: 13,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-      child: Container(
-        width: 36,
-        height: 36,
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          color: _CoresApp.superficieDestaque,
-          shape: BoxShape.circle,
-        ),
-        child: Text(
-          iniciais.toUpperCase(),
-          style: const TextStyle(
-            color: _CoresApp.cianoPrimario,
-            fontSize: 12,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BarraNavegacaoInferior extends StatelessWidget {
-  final int indiceAtivo;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
-
-  const _BarraNavegacaoInferior({
-    required this.indiceAtivo,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _CoresApp.superficie,
-        border: Border(
-          top: BorderSide(color: _CoresApp.borda, width: 1),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Center(
-          heightFactor: 1,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _ItemMenuRodape(
-                    icone: Icons.account_balance_wallet_outlined,
-                    rotulo: 'Início',
-                    ativo: indiceAtivo == 0,
-                    aoClicar: aoClicarInicio,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.show_chart_rounded,
-                    rotulo: 'Mercado',
-                    ativo: indiceAtivo == 1,
-                    aoClicar: aoClicarMercado,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.pix_outlined,
-                    rotulo: 'Pix',
-                    ativo: indiceAtivo == 2,
-                    aoClicar: aoClicarPix,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.history_rounded,
-                    rotulo: 'Histórico',
-                    ativo: indiceAtivo == 3,
-                    aoClicar: aoClicarHistorico,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ItemMenuRodape extends StatelessWidget {
-  final IconData icone;
-  final String rotulo;
-  final bool ativo;
-  final VoidCallback? aoClicar;
-
-  const _ItemMenuRodape({
-    required this.icone,
-    required this.rotulo,
-    required this.ativo,
-    this.aoClicar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cor = ativo ? _CoresApp.cianoPrimario : _CoresApp.textoSecundario;
-
-    return Expanded(
-      child: InkWell(
-        onTap: aoClicar,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icone, color: cor, size: 22),
-              const SizedBox(height: 4),
-              Text(
-                rotulo,
-                style: TextStyle(
-                  color: cor,
-                  fontSize: 11,
-                  fontFamily: 'Inter',
-                  fontWeight: ativo ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

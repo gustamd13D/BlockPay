@@ -4,7 +4,9 @@ import 'boasVindasController.dart';
 import 'cadastroClienteController.dart';
 import 'comprarCriptoController.dart';
 import 'dashboardController.dart';
+import 'depositarComPixController.dart';
 import 'editarContaController.dart';
+import 'historicoTransacoesController.dart';
 import 'loginController.dart';
 import 'mercadoCriptoController.dart';
 import 'recuperarAcessoController.dart';
@@ -18,6 +20,8 @@ abstract class RotasApp {
   static const String painel = '/painel';
   static const String mercadoCripto = '/mercado-cripto';
   static const String comprarCripto = '/comprar-cripto';
+  static const String depositarComPix = '/depositar-com-pix';
+  static const String historico = '/historico';
   static const String transferirCripto = '/transferir-cripto';
   static const String statusBlockchain = '/status-blockchain';
   static const String editarConta = '/editar-conta';
@@ -44,6 +48,10 @@ class RouterController {
       MercadoCriptoController();
   static final ComprarCriptoController _comprarCriptoController =
       ComprarCriptoController();
+  static final DepositarComPixController _depositarComPixController =
+      DepositarComPixController();
+  static final HistoricoTransacoesController _historicoTransacoesController =
+      HistoricoTransacoesController();
   static final EditarContaController _editarContaController =
       EditarContaController();
   static final TransferirCriptoController _transferirCriptoController =
@@ -114,6 +122,20 @@ class RouterController {
           settings: settings,
           builder: (context) =>
               _comprarCriptoController.construirTela(context, args),
+        );
+
+      case RotasApp.depositarComPix:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) =>
+              _depositarComPixController.construirTela(context, args),
+        );
+
+      case RotasApp.historico:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) =>
+              _historicoTransacoesController.construirTela(context, args),
         );
 
       case RotasApp.editarConta:

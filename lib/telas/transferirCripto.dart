@@ -1,25 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-/// Paleta de cores centralizada do sistema de design BlockPay
-abstract class _CoresApp {
-  static const Color fundo = Color(0xFF0B0E17);
-  static const Color superficie = Color(0xFF151A26);
-  static const Color superficieAvatar = Color(0xFF21293A);
-  static const Color borda = Color(0xFF2A354A);
-  static const Color cianoPrimario = Color(0xFF00E5FF);
-  static const Color cianoSuave = Color(0x1500E5FF);
-  static const Color amareloBitcoin = Color(0xFFFFD600);
-  static const Color amareloSuave = Color(0x15FFD600);
-  static const Color roxoSolana = Color(0xFFB388FF);
-  static const Color roxoSuave = Color(0x15B388FF);
-  static const Color azulCardano = Color(0xFF448AFF);
-  static const Color azulSuave = Color(0x15448AFF);
-  static const Color vermelhoErro = Color(0xFFFF5252);
-  static const Color textoPrimario = Colors.white;
-  static const Color textoSecundario = Color(0xFF90A4AE);
-  static const Color textoTerciario = Color(0xFF546E7A);
-}
+import '../componentes/cabecalhoDesktopWrapper.dart';
+import '../componentes/cabecalhoMobileWrapper.dart';
+import '../componentes/coresApp.dart';
+import '../componentes/menuInferiorWrapper.dart';
 
 class TransferirCripto extends StatefulWidget {
   final String iniciaisUsuario;
@@ -41,10 +25,8 @@ class TransferirCripto extends StatefulWidget {
 
   /// Callbacks de navegacao
   final VoidCallback? aoClicarPerfil;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
+  final VoidCallback? aoClicarSair;
+  final ValueChanged<int>? aoSelecionarAba;
 
   const TransferirCripto({
     super.key,
@@ -57,10 +39,8 @@ class TransferirCripto extends StatefulWidget {
     this.cpfRemetente,
     this.aoTransferir,
     this.aoClicarPerfil,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
+    this.aoClicarSair,
+    this.aoSelecionarAba,
   });
 
   @override
@@ -258,12 +238,12 @@ class _TransferirCriptoState extends State<TransferirCripto> {
           height: 24,
           alignment: Alignment.center,
           decoration: const BoxDecoration(
-            color: _CoresApp.amareloSuave,
+            color: CoresApp.amareloSuave,
             shape: BoxShape.circle,
           ),
           child: const Icon(
             Icons.currency_bitcoin_rounded,
-            color: _CoresApp.amareloBitcoin,
+            color: CoresApp.amareloBitcoin,
             size: 16,
           ),
         );
@@ -273,12 +253,12 @@ class _TransferirCriptoState extends State<TransferirCripto> {
           height: 24,
           alignment: Alignment.center,
           decoration: const BoxDecoration(
-            color: _CoresApp.cianoSuave,
+            color: CoresApp.cianoSuave,
             shape: BoxShape.circle,
           ),
           child: const Icon(
             Icons.toll_rounded,
-            color: _CoresApp.cianoPrimario,
+            color: CoresApp.cianoPrimario,
             size: 16,
           ),
         );
@@ -288,13 +268,13 @@ class _TransferirCriptoState extends State<TransferirCripto> {
           height: 24,
           alignment: Alignment.center,
           decoration: const BoxDecoration(
-            color: _CoresApp.roxoSuave,
+            color: CoresApp.roxoSuave,
             shape: BoxShape.circle,
           ),
           child: const Text(
             'SOL',
             style: TextStyle(
-              color: _CoresApp.roxoSolana,
+              color: CoresApp.roxoSolana,
               fontSize: 8.5,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
@@ -307,13 +287,13 @@ class _TransferirCriptoState extends State<TransferirCripto> {
           height: 24,
           alignment: Alignment.center,
           decoration: const BoxDecoration(
-            color: _CoresApp.azulSuave,
+            color: CoresApp.azulSuave,
             shape: BoxShape.circle,
           ),
           child: const Text(
             'ADA',
             style: TextStyle(
-              color: _CoresApp.azulCardano,
+              color: CoresApp.azulCardano,
               fontSize: 8.5,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
@@ -335,7 +315,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
           Text(
             '$nome ($sigla)',
             style: const TextStyle(
-              color: _CoresApp.textoPrimario,
+              color: CoresApp.textoPrimario,
               fontSize: 14,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
@@ -365,7 +345,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                 const Text(
                   'Transferir cripto',
                   style: TextStyle(
-                    color: _CoresApp.textoPrimario,
+                    color: CoresApp.textoPrimario,
                     fontSize: 20,
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w700,
@@ -378,7 +358,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
           const Text(
             'Destinatário (e-mail ou endereço)',
             style: TextStyle(
-              color: _CoresApp.textoSecundario,
+              color: CoresApp.textoSecundario,
               fontSize: 13,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w600,
@@ -399,65 +379,65 @@ class _TransferirCriptoState extends State<TransferirCripto> {
               }
             },
             style: const TextStyle(
-              color: _CoresApp.textoPrimario,
+              color: CoresApp.textoPrimario,
               fontSize: 14,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w400,
             ),
-            cursorColor: _CoresApp.cianoPrimario,
+            cursorColor: CoresApp.cianoPrimario,
             decoration: InputDecoration(
               hintText: 'usuario@exemplo.com',
               errorText: _erroDestinatario,
               errorMaxLines: 2,
               hintStyle: const TextStyle(
-                color: _CoresApp.textoSecundario,
+                color: CoresApp.textoSecundario,
                 fontSize: 14,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w400,
               ),
               filled: true,
-              fillColor: _CoresApp.superficie,
+              fillColor: CoresApp.superficie,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14,
                 vertical: 15,
               ),
               prefixIcon: const Icon(
                 Icons.person_outline_rounded,
-                color: _CoresApp.textoSecundario,
+                color: CoresApp.textoSecundario,
                 size: 20,
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.borda,
+                  color: CoresApp.borda,
                   width: 1,
                 ),
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.borda,
+                  color: CoresApp.borda,
                   width: 1,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.cianoPrimario,
+                  color: CoresApp.cianoPrimario,
                   width: 1.5,
                 ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.vermelhoErro,
+                  color: CoresApp.vermelhoNegativo,
                   width: 1,
                 ),
               ),
               focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.vermelhoErro,
+                  color: CoresApp.vermelhoNegativo,
                   width: 1.5,
                 ),
               ),
@@ -467,7 +447,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
           const Text(
             'Selecione o ativo',
             style: TextStyle(
-              color: _CoresApp.textoSecundario,
+              color: CoresApp.textoSecundario,
               fontSize: 13,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w600,
@@ -477,15 +457,15 @@ class _TransferirCriptoState extends State<TransferirCripto> {
           if (possuiAtivos)
             DropdownButtonFormField<String>(
               value: _ativoSelecionado,
-              dropdownColor: _CoresApp.superficie,
+              dropdownColor: CoresApp.superficie,
               icon: const Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: _CoresApp.textoSecundario,
+                color: CoresApp.textoSecundario,
                 size: 22,
               ),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: _CoresApp.superficie,
+                fillColor: CoresApp.superficie,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 13,
@@ -493,14 +473,14 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                    color: _CoresApp.borda,
+                    color: CoresApp.borda,
                     width: 1,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                    color: _CoresApp.cianoPrimario,
+                    color: CoresApp.cianoPrimario,
                     width: 1.5,
                   ),
                 ),
@@ -529,10 +509,10 @@ class _TransferirCriptoState extends State<TransferirCripto> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
               decoration: BoxDecoration(
-                color: _CoresApp.superficie,
+                color: CoresApp.superficie,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _CoresApp.borda,
+                  color: CoresApp.borda,
                   width: 1,
                 ),
               ),
@@ -540,7 +520,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                 children: [
                   Icon(
                     Icons.account_balance_wallet_outlined,
-                    color: _CoresApp.textoSecundario,
+                    color: CoresApp.textoSecundario,
                     size: 20,
                   ),
                   SizedBox(width: 10),
@@ -548,7 +528,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                     child: Text(
                       'Nenhuma cripto com saldo disponível',
                       style: TextStyle(
-                        color: _CoresApp.textoSecundario,
+                        color: CoresApp.textoSecundario,
                         fontSize: 14,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w500,
@@ -562,7 +542,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
           const Text(
             'Quantidade',
             style: TextStyle(
-              color: _CoresApp.textoSecundario,
+              color: CoresApp.textoSecundario,
               fontSize: 13,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w600,
@@ -580,22 +560,22 @@ class _TransferirCriptoState extends State<TransferirCripto> {
             validator: _validarQuantidade,
             onFieldSubmitted: (_) => _processarTransferencia(),
             style: const TextStyle(
-              color: _CoresApp.textoPrimario,
+              color: CoresApp.textoPrimario,
               fontSize: 18,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
             ),
-            cursorColor: _CoresApp.cianoPrimario,
+            cursorColor: CoresApp.cianoPrimario,
             decoration: InputDecoration(
               hintText: '0.001',
               hintStyle: const TextStyle(
-                color: _CoresApp.textoSecundario,
+                color: CoresApp.textoSecundario,
                 fontSize: 18,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
               ),
               filled: true,
-              fillColor: _CoresApp.superficie,
+              fillColor: CoresApp.superficie,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14,
                 vertical: 15,
@@ -608,7 +588,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                     Text(
                       possuiAtivos ? _ativoSelecionado : '---',
                       style: const TextStyle(
-                        color: _CoresApp.cianoPrimario,
+                        color: CoresApp.cianoPrimario,
                         fontSize: 14,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w700,
@@ -620,35 +600,35 @@ class _TransferirCriptoState extends State<TransferirCripto> {
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.borda,
+                  color: CoresApp.borda,
                   width: 1,
                 ),
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.borda,
+                  color: CoresApp.borda,
                   width: 1,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.cianoPrimario,
+                  color: CoresApp.cianoPrimario,
                   width: 1.5,
                 ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.vermelhoErro,
+                  color: CoresApp.vermelhoNegativo,
                   width: 1,
                 ),
               ),
               focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: _CoresApp.vermelhoErro,
+                  color: CoresApp.vermelhoNegativo,
                   width: 1.5,
                 ),
               ),
@@ -663,7 +643,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                     ? 'Disponível: ${_formatarQuantidade(_saldoDisponivelAtual)} $_ativoSelecionado'
                     : 'Compre criptomoedas na aba Mercado para transferir',
                 style: const TextStyle(
-                  color: _CoresApp.textoTerciario,
+                  color: CoresApp.textoTerciario,
                   fontSize: 11,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w400,
@@ -684,7 +664,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                     child: Text(
                       'Usar máximo',
                       style: TextStyle(
-                        color: _CoresApp.cianoPrimario,
+                        color: CoresApp.cianoPrimario,
                         fontSize: 11,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w600,
@@ -703,10 +683,10 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                   ? null
                   : _processarTransferencia,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _CoresApp.cianoPrimario,
+                backgroundColor: CoresApp.cianoPrimario,
                 disabledBackgroundColor:
-                    _CoresApp.cianoPrimario.withOpacity(0.35),
-                foregroundColor: _CoresApp.fundo,
+                    CoresApp.cianoPrimario.withOpacity(0.35),
+                foregroundColor: CoresApp.fundo,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -721,14 +701,14 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.4,
-                            color: _CoresApp.fundo,
+                            color: CoresApp.fundo,
                           ),
                         ),
                         SizedBox(width: 12),
                         Text(
                           'Verificando destinatário...',
                           style: TextStyle(
-                            color: _CoresApp.fundo,
+                            color: CoresApp.fundo,
                             fontSize: 15,
                             fontFamily: 'Inter',
                             fontWeight: FontWeight.w700,
@@ -770,23 +750,22 @@ class _TransferirCriptoState extends State<TransferirCripto> {
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle.light.copyWith(
             statusBarColor: Colors.transparent,
-            systemNavigationBarColor: _CoresApp.superficie,
+            systemNavigationBarColor: CoresApp.superficie,
           ),
           child: Scaffold(
-            backgroundColor: _CoresApp.fundo,
+            backgroundColor: CoresApp.fundo,
             body: SafeArea(
               bottom: telaGrande,
               child: telaGrande
                   ? Column(
                       children: [
-                        _CabecalhoDesktop(
-                          iniciais: widget.iniciaisUsuario,
+                        CabecalhoDesktopWrapper(
+                          iniciaisUsuario: widget.iniciaisUsuario,
+                          indiceAtivo: 0,
+                          etiquetaTela: 'Transferir Cripto',
+                          aoSelecionarAba: widget.aoSelecionarAba,
                           aoClicarPerfil: widget.aoClicarPerfil,
-                          aoClicarInicio: widget.aoClicarInicio ??
-                              () => Navigator.pop(context),
-                          aoClicarMercado: widget.aoClicarMercado,
-                          aoClicarPix: widget.aoClicarPix,
-                          aoClicarHistorico: widget.aoClicarHistorico,
+                          aoClicarSair: widget.aoClicarSair,
                         ),
                         Expanded(
                           child: SingleChildScrollView(
@@ -802,10 +781,10 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                                 child: Container(
                                   padding: const EdgeInsets.all(28),
                                   decoration: BoxDecoration(
-                                    color: _CoresApp.superficie,
+                                    color: CoresApp.superficie,
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: _CoresApp.borda,
+                                      color: CoresApp.borda,
                                       width: 1,
                                     ),
                                   ),
@@ -824,11 +803,13 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                         constraints: const BoxConstraints(maxWidth: 480),
                         child: Column(
                           children: [
-                            _BarraSuperiorMobile(
+                            CabecalhoMobileWrapper(
                               titulo: 'Transferir cripto',
-                              iniciais: widget.iniciaisUsuario,
+                              iniciaisUsuario: widget.iniciaisUsuario,
+                              mostrarBotaoVoltar: true,
                               aoVoltar: () => Navigator.pop(context),
                               aoClicarPerfil: widget.aoClicarPerfil,
+                              aoClicarSair: widget.aoClicarSair,
                             ),
                             Expanded(
                               child: SingleChildScrollView(
@@ -851,13 +832,9 @@ class _TransferirCriptoState extends State<TransferirCripto> {
             ),
             bottomNavigationBar: telaGrande
                 ? null
-                : _BarraNavegacaoInferior(
+                : MenuInferiorWrapper(
                     indiceAtivo: 0,
-                    aoClicarInicio:
-                        widget.aoClicarInicio ?? () => Navigator.pop(context),
-                    aoClicarMercado: widget.aoClicarMercado,
-                    aoClicarPix: widget.aoClicarPix,
-                    aoClicarHistorico: widget.aoClicarHistorico,
+                    aoSelecionarAba: widget.aoSelecionarAba,
                   ),
           ),
         );
@@ -880,379 +857,13 @@ class _BotaoVoltarCircular extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: const BoxDecoration(
-          color: _CoresApp.superficieAvatar,
+          color: CoresApp.superficieAvatar,
           shape: BoxShape.circle,
         ),
         child: const Icon(
           Icons.arrow_back_rounded,
-          color: _CoresApp.textoPrimario,
+          color: CoresApp.textoPrimario,
           size: 18,
-        ),
-      ),
-    );
-  }
-}
-
-class _BarraSuperiorMobile extends StatelessWidget {
-  final String titulo;
-  final String iniciais;
-  final VoidCallback aoVoltar;
-  final VoidCallback? aoClicarPerfil;
-
-  const _BarraSuperiorMobile({
-    required this.titulo,
-    required this.iniciais,
-    required this.aoVoltar,
-    this.aoClicarPerfil,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        children: [
-          _BotaoVoltarCircular(aoVoltar: aoVoltar),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              titulo,
-              style: const TextStyle(
-                color: _CoresApp.textoPrimario,
-                fontSize: 18,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          InkWell(
-            onTap: aoClicarPerfil,
-            borderRadius: BorderRadius.circular(18),
-            child: Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: _CoresApp.superficieAvatar,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                iniciais.toUpperCase(),
-                style: const TextStyle(
-                  color: _CoresApp.cianoPrimario,
-                  fontSize: 12,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CabecalhoDesktop extends StatelessWidget {
-  final String iniciais;
-  final VoidCallback? aoClicarPerfil;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
-
-  const _CabecalhoDesktop({
-    required this.iniciais,
-    this.aoClicarPerfil,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _CoresApp.superficie,
-        border: Border(
-          bottom: BorderSide(
-            color: _CoresApp.borda,
-            width: 1,
-          ),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1120),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: _CoresApp.cianoSuave,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: _CoresApp.cianoPrimario,
-                    width: 1.5,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.storage_rounded,
-                  color: _CoresApp.cianoPrimario,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'BlockPay',
-                style: TextStyle(
-                  color: _CoresApp.textoPrimario,
-                  fontSize: 18,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _CoresApp.cianoSuave,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'Transferir Cripto',
-                  style: TextStyle(
-                    color: _CoresApp.cianoPrimario,
-                    fontSize: 11,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              _ItemMenuSuperior(
-                icone: Icons.account_balance_wallet_outlined,
-                rotulo: 'Início',
-                ativo: true,
-                aoClicar: aoClicarInicio,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.show_chart_rounded,
-                rotulo: 'Mercado',
-                ativo: false,
-                aoClicar: aoClicarMercado,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.pix_outlined,
-                rotulo: 'Pix',
-                ativo: false,
-                aoClicar: aoClicarPix,
-              ),
-              const SizedBox(width: 8),
-              _ItemMenuSuperior(
-                icone: Icons.history_rounded,
-                rotulo: 'Histórico',
-                ativo: false,
-                aoClicar: aoClicarHistorico,
-              ),
-              const SizedBox(width: 20),
-              InkWell(
-                onTap: aoClicarPerfil,
-                borderRadius: BorderRadius.circular(18),
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: _CoresApp.superficieAvatar,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    iniciais.toUpperCase(),
-                    style: const TextStyle(
-                      color: _CoresApp.cianoPrimario,
-                      fontSize: 12,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ItemMenuSuperior extends StatelessWidget {
-  final IconData icone;
-  final String rotulo;
-  final bool ativo;
-  final VoidCallback? aoClicar;
-
-  const _ItemMenuSuperior({
-    required this.icone,
-    required this.rotulo,
-    required this.ativo,
-    this.aoClicar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cor = ativo ? _CoresApp.cianoPrimario : _CoresApp.textoSecundario;
-
-    return InkWell(
-      onTap: aoClicar,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: ativo ? _CoresApp.cianoSuave : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icone, color: cor, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              rotulo,
-              style: TextStyle(
-                color: cor,
-                fontSize: 13,
-                fontFamily: 'Inter',
-                fontWeight: ativo ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BarraNavegacaoInferior extends StatelessWidget {
-  final int indiceAtivo;
-  final VoidCallback? aoClicarInicio;
-  final VoidCallback? aoClicarMercado;
-  final VoidCallback? aoClicarPix;
-  final VoidCallback? aoClicarHistorico;
-
-  const _BarraNavegacaoInferior({
-    required this.indiceAtivo,
-    this.aoClicarInicio,
-    this.aoClicarMercado,
-    this.aoClicarPix,
-    this.aoClicarHistorico,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _CoresApp.superficie,
-        border: Border(
-          top: BorderSide(
-            color: _CoresApp.borda,
-            width: 1,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Center(
-          heightFactor: 1,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _ItemMenuRodape(
-                    icone: Icons.account_balance_wallet_outlined,
-                    rotulo: 'Início',
-                    ativo: indiceAtivo == 0,
-                    aoClicar: aoClicarInicio,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.show_chart_rounded,
-                    rotulo: 'Mercado',
-                    ativo: indiceAtivo == 1,
-                    aoClicar: aoClicarMercado,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.pix_outlined,
-                    rotulo: 'Pix',
-                    ativo: indiceAtivo == 2,
-                    aoClicar: aoClicarPix,
-                  ),
-                  _ItemMenuRodape(
-                    icone: Icons.history_rounded,
-                    rotulo: 'Histórico',
-                    ativo: indiceAtivo == 3,
-                    aoClicar: aoClicarHistorico,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ItemMenuRodape extends StatelessWidget {
-  final IconData icone;
-  final String rotulo;
-  final bool ativo;
-  final VoidCallback? aoClicar;
-
-  const _ItemMenuRodape({
-    required this.icone,
-    required this.rotulo,
-    required this.ativo,
-    this.aoClicar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cor = ativo ? _CoresApp.cianoPrimario : _CoresApp.textoSecundario;
-
-    return Expanded(
-      child: InkWell(
-        onTap: aoClicar,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icone,
-                color: cor,
-                size: 22,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                rotulo,
-                style: TextStyle(
-                  color: cor,
-                  fontSize: 11,
-                  fontFamily: 'Inter',
-                  fontWeight: ativo ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
