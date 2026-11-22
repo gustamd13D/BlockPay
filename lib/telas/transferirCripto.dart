@@ -11,6 +11,10 @@ abstract class _CoresApp {
   static const Color cianoSuave = Color(0x1500E5FF);
   static const Color amareloBitcoin = Color(0xFFFFD600);
   static const Color amareloSuave = Color(0x15FFD600);
+  static const Color roxoSolana = Color(0xFFB388FF);
+  static const Color roxoSuave = Color(0x15B388FF);
+  static const Color azulCardano = Color(0xFF448AFF);
+  static const Color azulSuave = Color(0x15448AFF);
   static const Color vermelhoErro = Color(0xFFFF5252);
   static const Color textoPrimario = Colors.white;
   static const Color textoSecundario = Color(0xFF90A4AE);
@@ -21,6 +25,8 @@ class TransferirCripto extends StatefulWidget {
   final String iniciaisUsuario;
   final double saldoBtc;
   final double saldoEth;
+  final double saldoSol;
+  final double saldoAda;
   final String? emailRemetente;
   final String? cpfRemetente;
 
@@ -45,6 +51,8 @@ class TransferirCripto extends StatefulWidget {
     this.iniciaisUsuario = 'AL',
     this.saldoBtc = 0.034,
     this.saldoEth = 0.25,
+    this.saldoSol = 0.0,
+    this.saldoAda = 0.0,
     this.emailRemetente,
     this.cpfRemetente,
     this.aoTransferir,
@@ -64,9 +72,21 @@ class _TransferirCriptoState extends State<TransferirCripto> {
   final _controladorDestinatario = TextEditingController();
   final _controladorQuantidade = TextEditingController();
 
-  String _ativoSelecionado = 'BTC';
+  String _ativoSelecionado = '';
   String? _erroDestinatario;
   bool _verificandoEnvio = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _sincronizarAtivoSelecionado();
+  }
+
+  @override
+  void didUpdateWidget(covariant TransferirCripto oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _sincronizarAtivoSelecionado();
+  }
 
   @override
   void dispose() {
@@ -75,8 +95,51 @@ class _TransferirCriptoState extends State<TransferirCripto> {
     super.dispose();
   }
 
-  double get _saldoDisponivelAtual =>
-      _ativoSelecionado == 'BTC' ? widget.saldoBtc : widget.saldoEth;
+  double _saldoPorSigla(String sigla) {
+    switch (sigla) {
+      case 'BTC':
+        return widget.saldoBtc;
+      case 'ETH':
+        return widget.saldoEth;
+      case 'SOL':
+        return widget.saldoSol;
+      case 'ADA':
+        return widget.saldoAda;
+      default:
+        return 0.0;
+    }
+  }
+
+  /// Retorna apenas os ativos em que o usuario possui saldo maior que zero
+  List<dynamic> get _ativosDisponiveis {
+    const todosAtivos = [
+      {'sigla': 'BTC', 'nome': 'Bitcoin'},
+      {'sigla': 'ETH', 'nome': 'Ethereum'},
+      {'sigla': 'SOL', 'nome': 'Solana'},
+      {'sigla': 'ADA', 'nome': 'Cardano'},
+    ];
+
+    return todosAtivos
+        .where((ativo) => _saldoPorSigla(ativo['sigla']!) > 1e-9)
+        .toList();
+  }
+
+  /// Garante que o ativo selecionado sempre exista na lista de saldos positivos
+  void _sincronizarAtivoSelecionado() {
+    final disponiveis = _ativosDisponiveis;
+    if (disponiveis.isEmpty) {
+      _ativoSelecionado = '';
+      return;
+    }
+
+    final aindaPossuiSaldo =
+        disponiveis.any((ativo) => ativo['sigla'] == _ativoSelecionado);
+    if (!aindaPossuiSaldo) {
+      _ativoSelecionado = disponiveis.first['sigla']!;
+    }
+  }
+
+  double get _saldoDisponivelAtual => _saldoPorSigla(_ativoSelecionado);
 
   static String _formatarQuantidade(double valor) {
     var texto = valor.toStringAsFixed(6).replaceAll('.', ',');
@@ -123,6 +186,10 @@ class _TransferirCriptoState extends State<TransferirCripto> {
   }
 
   String? _validarQuantidade(String? valor) {
+    if (_ativosDisponiveis.isEmpty) {
+      return 'Você não possui saldo em criptomoedas';
+    }
+
     final texto = (valor ?? '').trim();
     if (texto.isEmpty) {
       return 'Informe a quantidade para transferir';
@@ -141,7 +208,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
   }
 
   Future<void> _processarTransferencia() async {
-    if (_verificandoEnvio) return;
+    if (_verificandoEnvio || _ativosDisponiveis.isEmpty) return;
     FocusScope.of(context).unfocus();
 
     setState(() {
@@ -184,40 +251,105 @@ class _TransferirCriptoState extends State<TransferirCripto> {
   }
 
   Widget _construirIconeAtivo(String sigla) {
-    if (sigla == 'BTC') {
-      return Container(
-        width: 24,
-        height: 24,
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          color: _CoresApp.amareloSuave,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.currency_bitcoin_rounded,
-          color: _CoresApp.amareloBitcoin,
-          size: 16,
-        ),
-      );
+    switch (sigla) {
+      case 'BTC':
+        return Container(
+          width: 24,
+          height: 24,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            color: _CoresApp.amareloSuave,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.currency_bitcoin_rounded,
+            color: _CoresApp.amareloBitcoin,
+            size: 16,
+          ),
+        );
+      case 'ETH':
+        return Container(
+          width: 24,
+          height: 24,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            color: _CoresApp.cianoSuave,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.toll_rounded,
+            color: _CoresApp.cianoPrimario,
+            size: 16,
+          ),
+        );
+      case 'SOL':
+        return Container(
+          width: 24,
+          height: 24,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            color: _CoresApp.roxoSuave,
+            shape: BoxShape.circle,
+          ),
+          child: const Text(
+            'SOL',
+            style: TextStyle(
+              color: _CoresApp.roxoSolana,
+              fontSize: 8.5,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        );
+      case 'ADA':
+        return Container(
+          width: 24,
+          height: 24,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            color: _CoresApp.azulSuave,
+            shape: BoxShape.circle,
+          ),
+          child: const Text(
+            'ADA',
+            style: TextStyle(
+              color: _CoresApp.azulCardano,
+              fontSize: 8.5,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        );
+      default:
+        return const SizedBox(width: 24, height: 24);
     }
+  }
 
-    return Container(
-      width: 24,
-      height: 24,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: _CoresApp.cianoSuave,
-        shape: BoxShape.circle,
-      ),
-      child: const Icon(
-        Icons.toll_rounded,
-        color: _CoresApp.cianoPrimario,
-        size: 16,
+  DropdownMenuItem<String> _construirItemAtivo(String sigla, String nome) {
+    return DropdownMenuItem(
+      value: sigla,
+      child: Row(
+        children: [
+          _construirIconeAtivo(sigla),
+          const SizedBox(width: 10),
+          Text(
+            '$nome ($sigla)',
+            style: const TextStyle(
+              color: _CoresApp.textoPrimario,
+              fontSize: 14,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _construirFormulario({required bool telaGrande}) {
+    final ativosDisponiveis = _ativosDisponiveis;
+    final possuiAtivos = ativosDisponiveis.isNotEmpty;
+
     return Form(
       key: _chaveFormulario,
       child: Column(
@@ -255,6 +387,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
           const SizedBox(height: 8),
           TextFormField(
             controller: _controladorDestinatario,
+            enabled: possuiAtivos,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             validator: _validarDestinatario,
@@ -300,6 +433,13 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                   width: 1,
                 ),
               ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: _CoresApp.borda,
+                  width: 1,
+                ),
+              ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
@@ -334,83 +474,90 @@ class _TransferirCriptoState extends State<TransferirCripto> {
             ),
           ),
           const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: _ativoSelecionado,
-            dropdownColor: _CoresApp.superficie,
-            icon: const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: _CoresApp.textoSecundario,
-              size: 22,
-            ),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: _CoresApp.superficie,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 13,
+          if (possuiAtivos)
+            DropdownButtonFormField<String>(
+              value: _ativoSelecionado,
+              dropdownColor: _CoresApp.superficie,
+              icon: const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: _CoresApp.textoSecundario,
+                size: 22,
               ),
-              enabledBorder: OutlineInputBorder(
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: _CoresApp.superficie,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 13,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: _CoresApp.borda,
+                    width: 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: _CoresApp.cianoPrimario,
+                    width: 1.5,
+                  ),
+                ),
+              ),
+              items: ativosDisponiveis
+                  .map(
+                    (ativo) => _construirItemAtivo(
+                      ativo['sigla']!,
+                      ativo['nome']!,
+                    ),
+                  )
+                  .toList(),
+              onChanged: _verificandoEnvio
+                  ? null
+                  : (novoAtivo) {
+                      if (novoAtivo == null) return;
+                      setState(() {
+                        _ativoSelecionado = novoAtivo;
+                      });
+                      if (_controladorQuantidade.text.trim().isNotEmpty) {
+                        _chaveFormulario.currentState?.validate();
+                      }
+                    },
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+              decoration: BoxDecoration(
+                color: _CoresApp.superficie,
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
+                border: Border.all(
                   color: _CoresApp.borda,
                   width: 1,
                 ),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: _CoresApp.cianoPrimario,
-                  width: 1.5,
-                ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: _CoresApp.textoSecundario,
+                    size: 20,
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Nenhuma cripto com saldo disponível',
+                      style: TextStyle(
+                        color: _CoresApp.textoSecundario,
+                        fontSize: 14,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            items: [
-              DropdownMenuItem(
-                value: 'BTC',
-                child: Row(
-                  children: [
-                    _construirIconeAtivo('BTC'),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Bitcoin (BTC)',
-                      style: TextStyle(
-                        color: _CoresApp.textoPrimario,
-                        fontSize: 14,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              DropdownMenuItem(
-                value: 'ETH',
-                child: Row(
-                  children: [
-                    _construirIconeAtivo('ETH'),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Ethereum (ETH)',
-                      style: TextStyle(
-                        color: _CoresApp.textoPrimario,
-                        fontSize: 14,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            onChanged: _verificandoEnvio
-                ? null
-                : (novoAtivo) {
-                    if (novoAtivo == null) return;
-                    setState(() {
-                      _ativoSelecionado = novoAtivo;
-                    });
-                  },
-          ),
           const SizedBox(height: 18),
           const Text(
             'Quantidade',
@@ -424,6 +571,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
           const SizedBox(height: 8),
           TextFormField(
             controller: _controladorQuantidade,
+            enabled: possuiAtivos,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             textInputAction: TextInputAction.done,
             inputFormatters: [
@@ -458,7 +606,7 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      _ativoSelecionado,
+                      possuiAtivos ? _ativoSelecionado : '---',
                       style: const TextStyle(
                         color: _CoresApp.cianoPrimario,
                         fontSize: 14,
@@ -470,6 +618,13 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                 ),
               ),
               enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: _CoresApp.borda,
+                  width: 1,
+                ),
+              ),
+              disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
                   color: _CoresApp.borda,
@@ -504,7 +659,9 @@ class _TransferirCriptoState extends State<TransferirCripto> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Disponível: ${_formatarQuantidade(_saldoDisponivelAtual)} $_ativoSelecionado',
+                possuiAtivos
+                    ? 'Disponível: ${_formatarQuantidade(_saldoDisponivelAtual)} $_ativoSelecionado'
+                    : 'Compre criptomoedas na aba Mercado para transferir',
                 style: const TextStyle(
                   color: _CoresApp.textoTerciario,
                   fontSize: 11,
@@ -512,27 +669,29 @@ class _TransferirCriptoState extends State<TransferirCripto> {
                   fontWeight: FontWeight.w400,
                 ),
               ),
-              InkWell(
-                onTap: _verificandoEnvio
-                    ? null
-                    : () {
-                        _controladorQuantidade.text =
-                            _saldoDisponivelAtual.toString();
-                      },
-                borderRadius: BorderRadius.circular(6),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  child: Text(
-                    'Usar máximo',
-                    style: TextStyle(
-                      color: _CoresApp.cianoPrimario,
-                      fontSize: 11,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w600,
+              if (possuiAtivos)
+                InkWell(
+                  onTap: _verificandoEnvio
+                      ? null
+                      : () {
+                          _controladorQuantidade.text =
+                              _saldoDisponivelAtual.toString();
+                          _chaveFormulario.currentState?.validate();
+                        },
+                  borderRadius: BorderRadius.circular(6),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Text(
+                      'Usar máximo',
+                      style: TextStyle(
+                        color: _CoresApp.cianoPrimario,
+                        fontSize: 11,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 28),
@@ -540,11 +699,13 @@ class _TransferirCriptoState extends State<TransferirCripto> {
             height: 54,
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _verificandoEnvio ? null : _processarTransferencia,
+              onPressed: (_verificandoEnvio || !possuiAtivos)
+                  ? null
+                  : _processarTransferencia,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _CoresApp.cianoPrimario,
                 disabledBackgroundColor:
-                    _CoresApp.cianoPrimario.withOpacity(0.5),
+                    _CoresApp.cianoPrimario.withOpacity(0.35),
                 foregroundColor: _CoresApp.fundo,
                 elevation: 0,
                 shape: RoundedRectangleBorder(

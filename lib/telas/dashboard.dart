@@ -17,6 +17,10 @@ abstract class _CoresApp {
   static const Color vermelhoNegativo = Color(0xFFFF5252);
   static const Color amareloBitcoin = Color(0xFFFFD600);
   static const Color amareloSuave = Color(0x15FFD600);
+  static const Color roxoSolana = Color(0xFFB388FF);
+  static const Color roxoSuave = Color(0x15B388FF);
+  static const Color azulCardano = Color(0xFF448AFF);
+  static const Color azulSuave = Color(0x15448AFF);
   static const Color textoPrimario = Colors.white;
   static const Color textoSecundario = Color(0xFF90A4AE);
 }
@@ -27,6 +31,8 @@ class Dashboard extends StatefulWidget {
   final double saldoBrl;
   final double quantidadeBtc;
   final double quantidadeEth;
+  final double quantidadeSol;
+  final double quantidadeAda;
   final String descricaoUltimaAtividade;
   final String valorUltimaAtividadeFormatado;
   final bool atividadePositiva;
@@ -49,6 +55,8 @@ class Dashboard extends StatefulWidget {
     required this.saldoBrl,
     required this.quantidadeBtc,
     required this.quantidadeEth,
+    this.quantidadeSol = 0.0,
+    this.quantidadeAda = 0.0,
     this.descricaoUltimaAtividade = 'Bônus de cadastro',
     this.valorUltimaAtividadeFormatado = '+R\$ 10.000,00',
     this.atividadePositiva = true,
@@ -70,11 +78,16 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   // Cotacoes iniciais de fallback ate a primeira resposta da API
-  double _cotacaoBtcBrl = 306470.59;
-  double _cotacaoEthBrl = 16000.00;
-  double _variacaoBtc24h = 2.8;
-  double _variacaoEth24h = 1.9;
-  bool _carregandoCotacao = true;
+  double _cotacaoBtcBrl = 310450.00;
+  double _cotacaoEthBrl = 16200.00;
+  double _cotacaoSolBrl = 680.00;
+  double _cotacaoAdaBrl = 2.45;
+
+  double _variacaoBtc24h = 3.4;
+  double _variacaoEth24h = -1.2;
+  double _variacaoSol24h = 12.5;
+  double _variacaoAda24h = -0.5;
+
   Timer? _temporizadorCotacao;
 
   @override
@@ -93,17 +106,13 @@ class _DashboardState extends State<Dashboard> {
     super.dispose();
   }
 
-  /// Busca cotacao atual de BTC e ETH em BRL
+  /// Busca cotacao atual de BTC, ETH, SOL e ADA em BRL automaticamente em segundo plano
   Future<void> _buscarCotacoesAtuais() async {
-    if (mounted) {
-      setState(() => _carregandoCotacao = true);
-    }
-
     try {
       // 1. Consulta primaria: CoinGecko API
       final uriCoinGecko = Uri.parse(
         'https://api.coingecko.com/api/v3/simple/price'
-        '?ids=bitcoin,ethereum&vs_currencies=brl&include_24hr_change=true',
+        '?ids=bitcoin,ethereum,solana,cardano&vs_currencies=brl&include_24hr_change=true',
       );
       final resposta =
           await http.get(uriCoinGecko).timeout(const Duration(seconds: 8));
@@ -112,16 +121,35 @@ class _DashboardState extends State<Dashboard> {
         final json = jsonDecode(resposta.body) as Map<String, dynamic>;
         final btc = json['bitcoin'] as Map<String, dynamic>?;
         final eth = json['ethereum'] as Map<String, dynamic>?;
+        final sol = json['solana'] as Map<String, dynamic>?;
+        final ada = json['cardano'] as Map<String, dynamic>?;
 
-        if (btc != null && eth != null && mounted) {
+        if (mounted) {
           setState(() {
-            _cotacaoBtcBrl = (btc['brl'] as num?)?.toDouble() ?? _cotacaoBtcBrl;
-            _cotacaoEthBrl = (eth['brl'] as num?)?.toDouble() ?? _cotacaoEthBrl;
-            _variacaoBtc24h =
-                (btc['brl_24h_change'] as num?)?.toDouble() ?? _variacaoBtc24h;
-            _variacaoEth24h =
-                (eth['brl_24h_change'] as num?)?.toDouble() ?? _variacaoEth24h;
-            _carregandoCotacao = false;
+            if (btc != null) {
+              _cotacaoBtcBrl =
+                  (btc['brl'] as num?)?.toDouble() ?? _cotacaoBtcBrl;
+              _variacaoBtc24h = (btc['brl_24h_change'] as num?)?.toDouble() ??
+                  _variacaoBtc24h;
+            }
+            if (eth != null) {
+              _cotacaoEthBrl =
+                  (eth['brl'] as num?)?.toDouble() ?? _cotacaoEthBrl;
+              _variacaoEth24h = (eth['brl_24h_change'] as num?)?.toDouble() ??
+                  _variacaoEth24h;
+            }
+            if (sol != null) {
+              _cotacaoSolBrl =
+                  (sol['brl'] as num?)?.toDouble() ?? _cotacaoSolBrl;
+              _variacaoSol24h = (sol['brl_24h_change'] as num?)?.toDouble() ??
+                  _variacaoSol24h;
+            }
+            if (ada != null) {
+              _cotacaoAdaBrl =
+                  (ada['brl'] as num?)?.toDouble() ?? _cotacaoAdaBrl;
+              _variacaoAda24h = (ada['brl_24h_change'] as num?)?.toDouble() ??
+                  _variacaoAda24h;
+            }
           });
           return;
         }
@@ -131,9 +159,9 @@ class _DashboardState extends State<Dashboard> {
     }
 
     try {
-      // 2. Fallback: AwesomeAPI Brasil (BTC-BRL e ETH-BRL)
+      // 2. Fallback: AwesomeAPI Brasil (BTC-BRL, ETH-BRL e SOL-BRL)
       final uriAwesome = Uri.parse(
-        'https://economia.awesomeapi.com.br/json/last/BTC-BRL,ETH-BRL',
+        'https://economia.awesomeapi.com.br/json/last/BTC-BRL,ETH-BRL,SOL-BRL',
       );
       final resposta =
           await http.get(uriAwesome).timeout(const Duration(seconds: 8));
@@ -142,42 +170,58 @@ class _DashboardState extends State<Dashboard> {
         final json = jsonDecode(resposta.body) as Map<String, dynamic>;
         final btc = json['BTCBRL'] as Map<String, dynamic>?;
         final eth = json['ETHBRL'] as Map<String, dynamic>?;
+        final sol = json['SOLBRL'] as Map<String, dynamic>?;
 
-        if (btc != null && eth != null && mounted) {
+        if (mounted) {
           setState(() {
-            _cotacaoBtcBrl =
-                double.tryParse(btc['bid']?.toString() ?? '') ?? _cotacaoBtcBrl;
-            _cotacaoEthBrl =
-                double.tryParse(eth['bid']?.toString() ?? '') ?? _cotacaoEthBrl;
-            _variacaoBtc24h =
-                double.tryParse(btc['pctChange']?.toString() ?? '') ??
-                    _variacaoBtc24h;
-            _variacaoEth24h =
-                double.tryParse(eth['pctChange']?.toString() ?? '') ??
-                    _variacaoEth24h;
-            _carregandoCotacao = false;
+            if (btc != null) {
+              _cotacaoBtcBrl = double.tryParse(btc['bid']?.toString() ?? '') ??
+                  _cotacaoBtcBrl;
+              _variacaoBtc24h =
+                  double.tryParse(btc['pctChange']?.toString() ?? '') ??
+                      _variacaoBtc24h;
+            }
+            if (eth != null) {
+              _cotacaoEthBrl = double.tryParse(eth['bid']?.toString() ?? '') ??
+                  _cotacaoEthBrl;
+              _variacaoEth24h =
+                  double.tryParse(eth['pctChange']?.toString() ?? '') ??
+                      _variacaoEth24h;
+            }
+            if (sol != null) {
+              _cotacaoSolBrl = double.tryParse(sol['bid']?.toString() ?? '') ??
+                  _cotacaoSolBrl;
+              _variacaoSol24h =
+                  double.tryParse(sol['pctChange']?.toString() ?? '') ??
+                      _variacaoSol24h;
+            }
           });
-          return;
         }
       }
     } catch (_) {
       // Mantem ultima cotacao valida caso esteja offline
-    }
-
-    if (mounted) {
-      setState(() => _carregandoCotacao = false);
     }
   }
 
   /// Calculos dinamicos baseados na quantidade atual + cotacao em tempo real
   double get _valorBtcBrl => widget.quantidadeBtc * _cotacaoBtcBrl;
   double get _valorEthBrl => widget.quantidadeEth * _cotacaoEthBrl;
-  double get _patrimonioTotal => widget.saldoBrl + _valorBtcBrl + _valorEthBrl;
+  double get _valorSolBrl => widget.quantidadeSol * _cotacaoSolBrl;
+  double get _valorAdaBrl => widget.quantidadeAda * _cotacaoAdaBrl;
+
+  double get _patrimonioTotal =>
+      widget.saldoBrl +
+      _valorBtcBrl +
+      _valorEthBrl +
+      _valorSolBrl +
+      _valorAdaBrl;
 
   double get _variacaoHojeBrl {
     final ganhoBtc = _valorBtcBrl * (_variacaoBtc24h / 100);
     final ganhoEth = _valorEthBrl * (_variacaoEth24h / 100);
-    return ganhoBtc + ganhoEth;
+    final ganhoSol = _valorSolBrl * (_variacaoSol24h / 100);
+    final ganhoAda = _valorAdaBrl * (_variacaoAda24h / 100);
+    return ganhoBtc + ganhoEth + ganhoSol + ganhoAda;
   }
 
   double get _variacaoHojePercentual {
@@ -218,49 +262,7 @@ class _DashboardState extends State<Dashboard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const _TituloSecao(texto: 'SEUS ATIVOS'),
-            InkWell(
-              onTap: _carregandoCotacao ? null : _buscarCotacoesAtuais,
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_carregandoCotacao)
-                      const SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.8,
-                          color: _CoresApp.cianoPrimario,
-                        ),
-                      )
-                    else
-                      const Icon(
-                        Icons.refresh_rounded,
-                        color: _CoresApp.cianoPrimario,
-                        size: 14,
-                      ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _carregandoCotacao ? 'Atualizando...' : 'Cotação ao vivo',
-                      style: const TextStyle(
-                        color: _CoresApp.cianoPrimario,
-                        fontSize: 11,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+        const _TituloSecao(texto: 'SEUS ATIVOS'),
         const SizedBox(height: 10),
         _CardAtivo(
           corFundoIcone: _CoresApp.verdeSuave,
@@ -303,6 +305,44 @@ class _DashboardState extends State<Dashboard> {
               '${_formatarDecimal(widget.quantidadeEth, 4)} ETH • ${_formatarMoeda(_cotacaoEthBrl)}',
           valorBrlFormatado: _formatarMoeda(_valorEthBrl),
         ),
+        if (widget.quantidadeSol > 0) ...[
+          const SizedBox(height: 10),
+          _CardAtivo(
+            corFundoIcone: _CoresApp.roxoSuave,
+            iconeWidget: const Text(
+              'SOL',
+              style: TextStyle(
+                color: _CoresApp.roxoSolana,
+                fontSize: 12,
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            titulo: 'Solana (SOL)',
+            subtitulo:
+                '${_formatarDecimal(widget.quantidadeSol, 6)} SOL • ${_formatarMoeda(_cotacaoSolBrl)}',
+            valorBrlFormatado: _formatarMoeda(_valorSolBrl),
+          ),
+        ],
+        if (widget.quantidadeAda > 0) ...[
+          const SizedBox(height: 10),
+          _CardAtivo(
+            corFundoIcone: _CoresApp.azulSuave,
+            iconeWidget: const Text(
+              'ADA',
+              style: TextStyle(
+                color: _CoresApp.azulCardano,
+                fontSize: 12,
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            titulo: 'Cardano (ADA)',
+            subtitulo:
+                '${_formatarDecimal(widget.quantidadeAda, 6)} ADA • ${_formatarMoeda(_cotacaoAdaBrl)}',
+            valorBrlFormatado: _formatarMoeda(_valorAdaBrl),
+          ),
+        ],
       ],
     );
   }

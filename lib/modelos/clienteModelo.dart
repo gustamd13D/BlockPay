@@ -1,67 +1,71 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Modelo de dados do cliente armazenado na colecao 'clientes'
 class ClienteModelo {
   final String nome;
   final String cpf;
   final String email;
-  final String telefone;
   final String pinHash;
+  final String telefone;
   final double saldoBrl;
   final double saldoBtc;
   final double saldoEth;
+  final double saldoSol;
+  final double saldoAda;
   final Map<String, dynamic>? ultimaTransacaoCripto;
-  final DateTime? criadoEm;
   final bool ativo;
 
   const ClienteModelo({
     required this.nome,
     required this.cpf,
     required this.email,
+    this.pinHash = '',
     this.telefone = '',
-    required this.pinHash,
-    required this.saldoBrl,
+    this.saldoBrl = 10000.0,
     this.saldoBtc = 0.034,
     this.saldoEth = 0.25,
+    this.saldoSol = 0.0,
+    this.saldoAda = 0.0,
     this.ultimaTransacaoCripto,
-    this.criadoEm,
     this.ativo = true,
   });
 
-  /// Converte o objeto Dart para o formato aceito pelo Firestore
+  factory ClienteModelo.deMapa(Map<String, dynamic> mapa) {
+    return ClienteModelo(
+      nome: mapa['nome']?.toString() ?? '',
+      cpf: mapa['cpf']?.toString() ?? '',
+      email: mapa['email']?.toString() ?? '',
+      pinHash: mapa['pinHash']?.toString() ?? '',
+      telefone: mapa['telefone']?.toString() ?? '',
+      saldoBrl: (mapa['saldoBrl'] as num?)?.toDouble() ?? 10000.0,
+      saldoBtc: (mapa['saldoBtc'] as num?)?.toDouble() ?? 0.034,
+      saldoEth: (mapa['saldoEth'] as num?)?.toDouble() ?? 0.25,
+      saldoSol: (mapa['saldoSol'] as num?)?.toDouble() ?? 0.0,
+      saldoAda: (mapa['saldoAda'] as num?)?.toDouble() ?? 0.0,
+      ultimaTransacaoCripto:
+          mapa['ultimaTransacaoCripto'] as Map<String, dynamic>?,
+      ativo: mapa['ativo'] as bool? ?? true,
+    );
+  }
+
   Map<String, dynamic> paraMapa({bool incluirDataServidor = false}) {
     return {
       'nome': nome,
       'cpf': cpf,
       'email': email,
-      'telefone': telefone,
       'pinHash': pinHash,
+      'telefone': telefone,
       'saldoBrl': saldoBrl,
       'saldoBtc': saldoBtc,
       'saldoEth': saldoEth,
+      'saldoSol': saldoSol,
+      'saldoAda': saldoAda,
       if (ultimaTransacaoCripto != null)
         'ultimaTransacaoCripto': ultimaTransacaoCripto,
       'ativo': ativo,
-      if (incluirDataServidor) 'criadoEm': FieldValue.serverTimestamp(),
+      if (incluirDataServidor) ...{
+        'criadoEm': FieldValue.serverTimestamp(),
+        'atualizadoEm': FieldValue.serverTimestamp(),
+      },
     };
-  }
-
-  /// Reconstroi o objeto ClienteModelo a partir de um documento do Firestore
-  factory ClienteModelo.deMapa(Map<String, dynamic> mapa) {
-    final timestamp = mapa['criadoEm'];
-    final ultimaTx = mapa['ultimaTransacaoCripto'];
-    return ClienteModelo(
-      nome: mapa['nome'] as String? ?? '',
-      cpf: mapa['cpf'] as String? ?? '',
-      email: mapa['email'] as String? ?? '',
-      telefone: mapa['telefone'] as String? ?? '',
-      pinHash: mapa['pinHash'] as String? ?? '',
-      saldoBrl: (mapa['saldoBrl'] as num?)?.toDouble() ?? 0.0,
-      saldoBtc: (mapa['saldoBtc'] as num?)?.toDouble() ?? 0.034,
-      saldoEth: (mapa['saldoEth'] as num?)?.toDouble() ?? 0.25,
-      ultimaTransacaoCripto: ultimaTx is Map<String, dynamic> ? ultimaTx : null,
-      criadoEm: timestamp is Timestamp ? timestamp.toDate() : null,
-      ativo: mapa['ativo'] as bool? ?? true,
-    );
   }
 }
