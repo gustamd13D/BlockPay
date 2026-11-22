@@ -72,14 +72,18 @@ abstract class BaseController {
     );
   }
 
-  /// Abre a tela de edicao de conta do usuario logado
+  /// Abre a tela de perfil/ajustes conforme o tipo de usuario (comum ou admin)
   void abrirPerfil(BuildContext context, ClienteModelo cliente) {
-    if (ModalRoute.of(context)?.settings.name == RotasApp.editarConta) {
+    final rotaDestino =
+        cliente.isAdmin ? RotasApp.adminAjustes : RotasApp.editarConta;
+
+    if (ModalRoute.of(context)?.settings.name == rotaDestino) {
       return;
     }
+
     Navigator.pushNamed(
       context,
-      RotasApp.editarConta,
+      rotaDestino,
       arguments: cliente,
     );
   }
@@ -93,7 +97,7 @@ abstract class BaseController {
     );
   }
 
-  /// Gerencia a navegacao padrao das abas (0: Inicio, 1: Mercado, 2: Pix, 3: Historico)
+  /// Gerencia a navegacao padrao das abas do cliente (0: Inicio, 1: Mercado, 2: Pix, 3: Historico)
   void navegarPeloMenu(
     BuildContext context,
     ClienteModelo cliente,
@@ -147,6 +151,52 @@ abstract class BaseController {
           RotasApp.historico,
           arguments: cliente,
         );
+        break;
+    }
+  }
+
+  /// Gerencia a navegacao padrao das abas do admin (0: Visao geral, 1: Usuarios, 2: Auditoria, 3: Ajustes)
+  void navegarPeloMenuAdmin(
+    BuildContext context,
+    ClienteModelo admin,
+    int indiceAba,
+  ) {
+    final rotaAtual = ModalRoute.of(context)?.settings.name;
+
+    switch (indiceAba) {
+      case 0:
+        if (rotaAtual == RotasApp.painelAdmin) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          RotasApp.painelAdmin,
+          (_) => false,
+          arguments: admin,
+        );
+        break;
+
+      case 1:
+        avisarTelaEmBreve(context, 'Usuários');
+        break;
+
+      case 2:
+        avisarTelaEmBreve(context, 'Auditoria');
+        break;
+
+      case 3:
+        if (rotaAtual == RotasApp.adminAjustes) return;
+        if (rotaAtual == RotasApp.painelAdmin) {
+          Navigator.pushNamed(
+            context,
+            RotasApp.adminAjustes,
+            arguments: admin,
+          );
+        } else {
+          Navigator.pushReplacementNamed(
+            context,
+            RotasApp.adminAjustes,
+            arguments: admin,
+          );
+        }
         break;
     }
   }

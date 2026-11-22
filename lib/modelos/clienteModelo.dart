@@ -13,6 +13,7 @@ class ClienteModelo {
   final double saldoAda;
   final Map<String, dynamic>? ultimaTransacaoCripto;
   final bool ativo;
+  final bool isAdmin;
 
   const ClienteModelo({
     required this.nome,
@@ -27,6 +28,7 @@ class ClienteModelo {
     this.saldoAda = 0.0,
     this.ultimaTransacaoCripto,
     this.ativo = true,
+    this.isAdmin = false,
   });
 
   factory ClienteModelo.deMapa(Map<String, dynamic> mapa) {
@@ -44,6 +46,8 @@ class ClienteModelo {
       ultimaTransacaoCripto:
           mapa['ultimaTransacaoCripto'] as Map<String, dynamic>?,
       ativo: mapa['ativo'] as bool? ?? true,
+      isAdmin: mapa['isAdmin'] == true ||
+          mapa['tipo']?.toString().toLowerCase() == 'admin',
     );
   }
 

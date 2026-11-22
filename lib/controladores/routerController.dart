@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'adminAjustesController.dart';
 import 'alterarSenhaController.dart';
 import 'boasVindasController.dart';
 import 'cadastroClienteController.dart';
 import 'comprarCriptoController.dart';
+import 'dashboardAdminController.dart';
 import 'dashboardController.dart';
 import 'depositarComPixController.dart';
 import 'editarContaController.dart';
 import 'historicoTransacoesController.dart';
 import 'loginController.dart';
 import 'mercadoCriptoController.dart';
+import 'recuperarAcessoAdminController.dart';
 import 'recuperarAcessoController.dart';
 import 'statusBlockchainController.dart';
 import 'transferirCriptoController.dart';
@@ -18,6 +21,9 @@ abstract class RotasApp {
   static const String boasVindas = '/';
   static const String login = '/login';
   static const String painel = '/painel';
+  static const String painelAdmin = '/painel-admin';
+  static const String adminAjustes = '/admin-ajustes';
+  static const String recuperarAcessoAdmin = '/recuperar-acesso-admin';
   static const String mercadoCripto = '/mercado-cripto';
   static const String comprarCripto = '/comprar-cripto';
   static const String depositarComPix = '/depositar-com-pix';
@@ -39,11 +45,17 @@ class RouterController {
       CadastroClienteController();
   static final RecuperarAcessoController _recuperarAcessoController =
       RecuperarAcessoController();
+  static final RecuperarAcessoAdminController _recuperarAcessoAdminController =
+      RecuperarAcessoAdminController();
   static final ValidarCodigoController _validarCodigoController =
       ValidarCodigoController();
   static final AlterarSenhaController _alterarSenhaController =
       AlterarSenhaController();
   static final DashboardController _dashboardController = DashboardController();
+  static final DashboardAdminController _dashboardAdminController =
+      DashboardAdminController();
+  static final AdminAjustesController _adminAjustesController =
+      AdminAjustesController();
   static final MercadoCriptoController _mercadoCriptoController =
       MercadoCriptoController();
   static final ComprarCriptoController _comprarCriptoController =
@@ -89,6 +101,13 @@ class RouterController {
               _recuperarAcessoController.construirTela(context),
         );
 
+      case RotasApp.recuperarAcessoAdmin:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) =>
+              _recuperarAcessoAdminController.construirTela(context, args),
+        );
+
       case RotasApp.validarCodigo:
         return MaterialPageRoute(
           settings: settings,
@@ -108,6 +127,20 @@ class RouterController {
           settings: settings,
           builder: (context) =>
               _dashboardController.construirTela(context, args),
+        );
+
+      case RotasApp.painelAdmin:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) =>
+              _dashboardAdminController.construirTela(context, args),
+        );
+
+      case RotasApp.adminAjustes:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) =>
+              _adminAjustesController.construirTela(context, args),
         );
 
       case RotasApp.mercadoCripto:

@@ -6,6 +6,7 @@ class CabecalhoMobileWrapper extends StatelessWidget {
   final String titulo;
   final String iniciaisUsuario;
   final bool mostrarBotaoVoltar;
+  final bool estiloAdmin;
   final VoidCallback? aoVoltar;
   final VoidCallback? aoClicarPerfil;
   final VoidCallback? aoClicarSair;
@@ -15,6 +16,7 @@ class CabecalhoMobileWrapper extends StatelessWidget {
     required this.titulo,
     required this.iniciaisUsuario,
     this.mostrarBotaoVoltar = false,
+    this.estiloAdmin = false,
     this.aoVoltar,
     this.aoClicarPerfil,
     this.aoClicarSair,
@@ -23,10 +25,29 @@ class CabecalhoMobileWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: EdgeInsets.fromLTRB(
+        mostrarBotaoVoltar && estiloAdmin ? 12 : 20,
+        14,
+        20,
+        14,
+      ),
       child: Row(
         children: [
-          if (mostrarBotaoVoltar) ...[
+          if (mostrarBotaoVoltar && estiloAdmin) ...[
+            InkWell(
+              onTap: aoVoltar ?? () => Navigator.maybePop(context),
+              borderRadius: BorderRadius.circular(20),
+              child: const Padding(
+                padding: EdgeInsets.all(6),
+                child: Icon(
+                  Icons.chevron_left_rounded,
+                  color: CoresApp.cianoPrimario,
+                  size: 26,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+          ] else if (mostrarBotaoVoltar) ...[
             InkWell(
               onTap: aoVoltar ?? () => Navigator.maybePop(context),
               borderRadius: BorderRadius.circular(18),

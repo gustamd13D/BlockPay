@@ -1,9 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../servicos/servicoFirestore.dart';
 import '../telas/login.dart';
-import 'routerController.dart';
 import 'baseController.dart';
+import 'routerController.dart';
 
 class LoginController extends BaseController {
   final ServicoFirestore _servicoFirestore;
@@ -23,9 +22,12 @@ class LoginController extends BaseController {
         );
 
         if (cliente != null && context.mounted) {
+          final rotaDestino =
+              cliente.isAdmin ? RotasApp.painelAdmin : RotasApp.painel;
+
           Navigator.pushNamedAndRemoveUntil(
             context,
-            RotasApp.painel,
+            rotaDestino,
             (_) => false,
             arguments: cliente,
           );
